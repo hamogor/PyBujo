@@ -21,7 +21,7 @@ def fig(custom):
 @cli.command()
 @click.option("-n" or "--name", default=False)
 def config(name=getpass.getuser()):
-
+    pass
 
 
 if __name__ == '__main__':
