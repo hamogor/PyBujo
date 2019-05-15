@@ -67,7 +67,7 @@ def rm(bujo, index):
         click.echo('There is no note {} {}'.format(bujo, index))
         return
     else:
-        if data[bujo] == []:
+        if data[bujo] is None:
             del data[bujo]
         _yaml_w(data)
 
