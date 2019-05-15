@@ -1,11 +1,15 @@
 import click
 import getpass
-from pyfiglet import Figlet
-import os.path
+import os
 import yaml
+import click_completion
+import pysnooper
 
+from pyfiglet import Figlet
 
+click_completion.init()
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
+snoop_log = os.getcwd()
 
 
 @click.group(invoke_without_command=True)
@@ -29,12 +33,13 @@ def show_bujo(pager=False):
     """
     data = _yaml_r() or {}
     bujos = sorted([bujo for bujo in data])
-
+    print(bujos)
+    title = Figlet(font='slant')
     output = []
 
     if data:
         for bujo in bujos:
-            output.append(click.style(bujo, reverse=True))
+            print(title.renderText(bujo))
             for index, item in enumerate(data[bujo], start=1):
                 output.append(' '*3 + str(index) + ': ' + item)
             else:
@@ -45,6 +50,27 @@ def show_bujo(pager=False):
                         click.echo(line)
     else:
         click.echo("You don't have any notes saved!")
+
+
+@cli.command()
+@click.argument('bujo', type=str)
+def ls(bujo):
+    output = []
+    data = _yaml_r() or {}
+    entries = data.get(bujo)
+    title = Figlet(font='slant')
+
+    if data:
+        index = 1
+        output.append(title.renderText(bujo))
+        for item in entries:
+
+            output.append(str(index) + ': ' + item)
+            index += 1
+        for line in output:
+            click.echo(line)
+    else:
+        click.echo('That journal doesn\'t exist!')
 
 
 @cli.command()
@@ -64,6 +90,7 @@ def fig(custom):
 def add(note, bujo=None):
     """
     Adds a note to the corresponding bujo
+
     :param note: The note to add
     :param bujo: The journal to add it to
     :return:
