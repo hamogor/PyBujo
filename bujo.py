@@ -4,11 +4,6 @@ from pyfiglet import Figlet
 import os.path
 import yaml
 
-#bujo new todo -t board
-# new todo list -t = type "board"
-#bujo todo
-#bujo todo tomorrow -l
-
 
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
 
@@ -52,6 +47,29 @@ def add(note, bujo=None):
         data[bujo] = [note]
 
     _yaml_w(data)
+
+
+@cli.command()
+@click.argument('bujo', type=str)
+@click.argument('index', type=int)
+def rm(bujo, index):
+    """
+    Deletes a note from a bujo
+    Removes empty bujo's
+    :param bujo: The bujo to delete from
+    :param index: The index of the note
+    :return:
+    """
+    data = _yaml_r()
+    try:
+        del data[bujo][index-1]
+    except (KeyError, IndexError, TypeError):
+        click.echo('There is no note {} {}'.format(bujo, index))
+        return
+    else:
+        if data[bujo] == []:
+            del data[bujo]
+        _yaml_w(data)
 
 
 def _yaml_r():
