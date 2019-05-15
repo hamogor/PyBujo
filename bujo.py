@@ -8,9 +8,43 @@ import yaml
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
 
 
-@click.group()
-def cli():
-    pass
+@click.group(invoke_without_command=True)
+@click.pass_context
+@click.option('-p', '--pager', is_flag=True)
+def cli(ctx, pager):
+    if ctx.invoked_subcommand is None:
+        if pager:
+            show_bujo(pager=True)
+        else:
+            show_bujo()
+
+
+def show_bujo(pager=False):
+    """
+    Displays the bujo
+
+    :param pager: Whether to show bujo as a pager
+    :type pager: boolean
+    :return:
+    """
+    data = _yaml_r() or {}
+    bujos = sorted([bujo for bujo in data])
+
+    output = []
+
+    if data:
+        for bujo in bujos:
+            output.append(click.style(bujo, reverse=True))
+            for index, item in enumerate(data[bujo], start=1):
+                output.append(' '*3 + str(index) + ': ' + item)
+            else:
+                if pager:
+                    click.echo_via_pager('\n'.join(output))
+                else:
+                    for line in output:
+                        click.echo(line)
+    else:
+        click.echo("You don't have any notes saved!")
 
 
 @cli.command()
