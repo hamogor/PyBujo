@@ -1,3 +1,4 @@
 Click
 PyFiglet
 pyyaml
+colorama

@@ -19,19 +19,11 @@ def cli(ctx):
         show_bujo()
 
 
-def show_bujo(pager=False):
-    """
-    Displays the bujo
-
-    :param pager: Whether to show bujo as a pager
-    :type pager: boolean
-    :return:
-    """
+def show_bujo():
+    """Displays all bujo's"""
     data = _yaml_r() or {}
     bujos = sorted([bujo for bujo in data])
-    print(bujos)
     title = Figlet(font='slant')
-    output = []
 
     if data:
         for bujo in bujos:
@@ -39,7 +31,7 @@ def show_bujo(pager=False):
             for index, item in enumerate(data[bujo], start=1):
                 print(' '*3 + str(index) + ': ' + item)
     else:
-        click.echo("You don't have any notes saved!")
+        click.echo(click.style("You don't have any notes saved!", fg='red'))
 
 
 @cli.command()
@@ -65,27 +57,27 @@ def ls(bujo):
 
 
 @cli.command()
-@click.option('--custom', '-c', default=False)
-def fig(custom):
+@click.option('--words', '-w', default=False, help='The custom text to print',
+              metavar='<str>')
+@click.option('--color', '-c', default=False, help='The color to print in')
+def fig(words, color='black'):
     """Prints PyBujo or a cool message"""
     f = Figlet(font='slant')
-    if custom:
-        print(f.renderText(custom))
+    if words:
+        click.echo(click.style(f.renderText(words), fg=color))
     else:
-        print(f.renderText(getpass.getuser()))
+        click.echo(click.style(f.renderText(getpass.getuser()), fg=color))
 
 
 @cli.command()
 @click.argument('note', type=str)
-@click.option('-b', '--bujo')
-@pysnooper.snoop()
+@click.option('-b', '--bujo', help='The name of the new journal to create',
+              metavar='<str>')
 def add(note, bujo=None):
     """
-    Adds a note to the corresponding bujo
+    Adds a note to a bujo, if no bujo
+    is specified writes to "General"
 
-    :param note: The note to add
-    :param bujo: The journal to add it to
-    :return:
     """
     data = _yaml_r() or {}
 
