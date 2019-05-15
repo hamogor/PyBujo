@@ -57,6 +57,7 @@ def show_bujo(pager=False):
 def ls(bujo):
     output = []
     data = _yaml_r() or {}
+    bujo = bujo.title()
     entries = data.get(bujo)
     title = Figlet(font='slant')
 
@@ -64,13 +65,12 @@ def ls(bujo):
         index = 1
         output.append(title.renderText(bujo))
         for item in entries:
-
             output.append(str(index) + ': ' + item)
             index += 1
         for line in output:
             click.echo(line)
     else:
-        click.echo('That journal doesn\'t exist!')
+        click.echo("That journal doesn't exist!")
 
 
 @cli.command()
@@ -87,6 +87,7 @@ def fig(custom):
 @cli.command()
 @click.argument('note', type=str)
 @click.option('-b', '--bujo')
+@pysnooper.snoop()
 def add(note, bujo=None):
     """
     Adds a note to the corresponding bujo
@@ -98,6 +99,8 @@ def add(note, bujo=None):
     data = _yaml_r() or {}
     if bujo is None:
         bujo = 'General'
+    else:
+        bujo = bujo.title()
 
     try:
         if note not in data[bujo]:
