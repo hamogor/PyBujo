@@ -3,7 +3,6 @@ import getpass
 import os
 import yaml
 import click_completion
-import pysnooper
 
 from pyfiglet import Figlet
 
