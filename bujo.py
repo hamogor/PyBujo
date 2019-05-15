@@ -14,13 +14,9 @@ snoop_log = os.getcwd()
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-@click.option('-p', '--pager', is_flag=True)
-def cli(ctx, pager):
+def cli(ctx):
     if ctx.invoked_subcommand is None:
-        if pager:
-            show_bujo(pager=True)
-        else:
-            show_bujo()
+        show_bujo()
 
 
 def show_bujo(pager=False):
@@ -41,13 +37,7 @@ def show_bujo(pager=False):
         for bujo in bujos:
             print(title.renderText(bujo))
             for index, item in enumerate(data[bujo], start=1):
-                output.append(' '*3 + str(index) + ': ' + item)
-            else:
-                if pager:
-                    click.echo_via_pager('\n'.join(output))
-                else:
-                    for line in output:
-                        click.echo(line)
+                print(' '*3 + str(index) + ': ' + item)
     else:
         click.echo("You don't have any notes saved!")
 
@@ -55,6 +45,7 @@ def show_bujo(pager=False):
 @cli.command()
 @click.argument('bujo', type=str)
 def ls(bujo):
+    """Lists all notes in a specific bujo"""
     output = []
     data = _yaml_r() or {}
     bujo = bujo.title()
@@ -97,6 +88,7 @@ def add(note, bujo=None):
     :return:
     """
     data = _yaml_r() or {}
+
     if bujo is None:
         bujo = 'General'
     else:
@@ -125,6 +117,8 @@ def rm(bujo, index):
     :return:
     """
     data = _yaml_r()
+    bujo = bujo.title()
+
     try:
         del data[bujo][index-1]
     except (KeyError, IndexError, TypeError):
