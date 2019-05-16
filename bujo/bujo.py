@@ -2,16 +2,14 @@ import click
 import getpass
 import os
 import yaml
-import click_completion
 
 from pyfiglet import Figlet
 
-click_completion.init()
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
-snoop_log = os.getcwd()
+_CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-@click.group(invoke_without_command=True)
+@click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
 @click.pass_context
 def cli(ctx):
     if ctx.invoked_subcommand is None:
