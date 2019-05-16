@@ -3,11 +3,12 @@ import bujo
 
 setup(
     name='bujo',
-    version='0.2',
-    description = 'A CLI tool for tracking anything and everything',
-    long_description = open('README.md').read() + "\n\n",
-    author = bujo.__author__,
-    author_email = 'ferovax@gmail.com',
+    version='0.2.2',
+    description='A CLI tool for tracking anything and everything',
+    long_description_content_type = "text/markdown",
+    long_description=open('README.md').read(),
+    author=bujo.__author__,
+    author_email='ferovax@gmail.com',
     py_modules=['bujo'],
     install_requires=[
         'Click',
@@ -19,7 +20,7 @@ setup(
         [console_scripts]
         bujo= bujo.bujo:cli
     ''',
-    classifiers = (
+    classifiers=(
         'Intended Audience :: Developers',
         'Natural Language :: English',
         'Programming Language :: Python',

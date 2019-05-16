@@ -2,11 +2,30 @@ import click
 import getpass
 import os
 import yaml
+import pysnooper
 
 from pyfiglet import Figlet
 
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+
+
+"""
+table_data = [
+    ['Heading1', 'Heading2'],
+    ['row1 column1', 'row1 column2'],
+    ['row2 column1', 'row2 column2'],
+    ['row3 column1', 'row3 column2']
+]
+
++--------------+--------------+
+| Heading1     | Heading2     |
++--------------+--------------+
+| row1 column1 | row1 column2 |
+| row2 column1 | row2 column2 |
+| row3 column1 | row3 column2 |
++--------------+--------------+
+"""
 
 
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
@@ -50,7 +69,7 @@ def ls(bujo):
         for line in output:
             click.echo(line)
     else:
-        click.echo("That journal doesn't exist!")
+        show_bujo()
 
 
 @cli.command()
@@ -70,7 +89,9 @@ def fig(words, color='black'):
 @click.argument('note', type=str)
 @click.option('-b', '--bujo', help='The name of the new journal to create',
               metavar='<str>')
-def add(note, bujo=None):
+# @click.option('-n', '--nest', help='Add a board inside a board',
+#              metavar='<str>')
+def add(note, bujo=None, nest=None):
     """
     Adds a note to a bujo, if no bujo
     is specified writes to "General"
@@ -130,6 +151,7 @@ def _yaml_r():
 
 
 def _yaml_w(data):
+    print(data)
     with open(_BUJO_PATH, 'w') as bujo_file:
         yaml.dump(data, bujo_file, indent=4, default_flow_style=False)
 
