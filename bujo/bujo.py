@@ -139,3 +139,4 @@ def _yaml_w(data):
 if __name__ == '__main__':
     cli = click.CommandCollection(sources=[cli])
     cli()
+
