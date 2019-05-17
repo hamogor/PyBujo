@@ -3,11 +3,13 @@ import getpass
 import os
 import yaml
 import pysnooper
+from pprint import pprint as pp
 
 from pyfiglet import Figlet
 
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+
 
 
 """
@@ -40,15 +42,34 @@ def show_bujo():
     data = _yaml_r() or {}
     bujos = sorted([bujo for bujo in data])
     title = Figlet(font='slant')
+    print(yaml.dump(data, indent=4, default_flow_style=False))
+    g = get_yaml('Work')
 
-    if data:
-        for bujo in bujos:
-            print(title.renderText(bujo))
-            for index, item in enumerate(data[bujo], start=1):
-                print(' '*3 + str(index) + ': ' + item)
-    else:
-        click.echo(click.style("You don't have any notes saved!", fg='red'))
 
+   #if data:
+   #    print(data)
+   #    for bujo in bujos:
+   #        # print(title.renderText(bujo))
+   #        for index, item in enumerate(data[bujo], start=1):
+   #            print(' '*3 + str(index) + ': ' + item)
+   #else:
+   #    click.echo(click.style("You don't have any notes saved!", fg='red'))
+
+def get_yaml(*args):
+    data = _yaml_r() or {}
+    section = args[0]
+    if section not in data:
+        print("key missing")
+        quit()
+
+    argList = list(args)
+    argList.pop(0)
+
+    parsepath = "data['" + section + "']"
+
+    for arg in argList:
+        parsepath = parsepath + "['" + arg + "']"
+    return eval(parsepath)
 
 @cli.command()
 @click.argument('bujo', type=str)
@@ -140,6 +161,14 @@ def rm(bujo, index):
         if data[bujo] is None:
             del data[bujo]
         _yaml_w(data)
+
+
+@cli.command()
+@click.argument('note', type=str)
+@click.argument('from bujo', type=str)
+@click.argument('to bujo', type=str)
+def mv(f_bujo, t_bujo, note):
+    pass
 
 
 def _yaml_r():
