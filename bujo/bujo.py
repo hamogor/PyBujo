@@ -3,6 +3,7 @@ import getpass
 import os
 import yaml
 import pysnooper
+from tabulate import tabulate
 from pprint import pprint as pp
 
 from pyfiglet import Figlet
@@ -37,13 +38,21 @@ def cli(ctx):
         show_bujo()
 
 
+# TODO - Flatten list to table_data for tabulate option to base command
 def show_bujo():
     """Displays all bujo's"""
     data = _yaml_r() or {}
     bujos = sorted([bujo for bujo in data])
     title = Figlet(font='slant')
-    print(yaml.dump(data, indent=4, default_flow_style=False))
-    g = get_yaml('Work')
+    #print({j for i in data.values() for j in i})
+    for k, v in data.items():
+        click.echo("")
+        click.echo(click.style(k, fg='yellow'))
+        for k1, v1, in v.items():
+            click.echo(click.style("- {}".format(k1), fg='green'))
+            for index, item in enumerate(v1, start=1):
+                click.echo(click.style("  {}  {}".format(str(index), item)))
+            click.echo("\n")
 
 
    #if data:
@@ -55,21 +64,6 @@ def show_bujo():
    #else:
    #    click.echo(click.style("You don't have any notes saved!", fg='red'))
 
-def get_yaml(*args):
-    data = _yaml_r() or {}
-    section = args[0]
-    if section not in data:
-        print("key missing")
-        quit()
-
-    argList = list(args)
-    argList.pop(0)
-
-    parsepath = "data['" + section + "']"
-
-    for arg in argList:
-        parsepath = parsepath + "['" + arg + "']"
-    return eval(parsepath)
 
 @cli.command()
 @click.argument('bujo', type=str)
