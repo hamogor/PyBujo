@@ -68,6 +68,7 @@ def ls(bujo):
             index += 1
         for line in output:
             click.echo(line)
+        click.echo('\n')
     else:
         show_bujo()
 
@@ -107,8 +108,9 @@ def add(note, bujo=None, nest=None):
     try:
         if note not in data[bujo]:
             data[bujo].append(note)
+            click.echo(click.style('"{}" added to {}'.format(note, bujo), fg='green'))
         else:
-            click.echo("You've already made this note")
+            click.echo(click.style("You've already made this note", fg='red'))
     except KeyError:
         data[bujo] = [note]
 
@@ -132,7 +134,7 @@ def rm(bujo, index):
     try:
         del data[bujo][index-1]
     except (KeyError, IndexError, TypeError):
-        click.echo('There is no note {} {}'.format(bujo, index))
+        click.echo(click.style('There is no note {} at index {}'.format(bujo, index), fg='red'))
         return
     else:
         if data[bujo] is None:
@@ -151,7 +153,6 @@ def _yaml_r():
 
 
 def _yaml_w(data):
-    print(data)
     with open(_BUJO_PATH, 'w') as bujo_file:
         yaml.dump(data, bujo_file, indent=4, default_flow_style=False)
 
