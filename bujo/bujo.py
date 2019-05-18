@@ -150,13 +150,13 @@ def rm(bujo, index):
 
 @cli.command()
 @click.argument('from_bujo', type=str)
-@click.option('--fromnested', '-fb', default=False, type=str)
+#@click.option('-fb', default=False, type=str)
 @click.argument('to_bujo', type=str)
-@click.option('--tonested', '-tb', default=False, type=str)
+#@click.option('-tb', default=False, type=str)
 @click.argument('index', type=int)
-@pysnooper.snoop()
 def mv(from_bujo, to_bujo, index, from_nested_bujo=None, to_nested_bujo=None):
     data = _yaml_r()
+    print(data)
     f_bujo = from_bujo.title()
     t_bujo = to_bujo.title()
     if from_nested_bujo:
@@ -164,29 +164,33 @@ def mv(from_bujo, to_bujo, index, from_nested_bujo=None, to_nested_bujo=None):
     if to_nested_bujo:
         t_n_bujo = to_nested_bujo.title()
 
-    try:
-        if f_n_bujo:
-            del data[f_bujo][f_n_bujo]
-        else:
-            del data[f_bujo]
-    except (KeyError, IndexError, TypeError):
-        if f_n_bujo:
-            click.echo(click.style('There is no note at index {} in {} - {}'.format(
-                index, f_bujo, f_n_bujo), fg='red'))
-        else:
-            click.echo(click.style('There is no note at index {} in {}'.format(index, f_bujo), fg='red'))
-        return
-    else:
-        to_position = data[t_bujo][t_n_bujo] if t_n_bujo else data[t_bujo]
-        from_position = data[f_bujo][f_n_bujo] if f_n_bujo else data[f_bujo]
-        if index in to_position:
-            click.echo(click.style('This note already exists in {}'.format(t_bujo), fg='red'))
-            return
-        else:
-            to_position.append(index)
-        if data[f_bujo] is None:
-            del from_position
-        _yaml_w(data)
+        # TODO - Rewrite this the opposite way around so the note is appended to t_bujo before being removed from f_bujo
+
+    #try:
+    #    if from_nested_bujo:
+    #        del data[f_bujo][f_n_bujo]
+    #    else:
+    #        del data[f_bujo]
+    #except (KeyError, IndexError, TypeError):
+    #    if from_nested_bujo:
+    #        click.echo(click.style('There is no note at index {} in {} - {}'.format(
+    #            index, f_bujo, f_n_bujo), fg='red'))
+    #    else:
+    #        click.echo(click.style('There is no note at index {} in {}'.format(index, f_bujo), fg='red'))
+    #    return
+    #else:
+    #    to_position = data[t_bujo][t_n_bujo] if to_nested_bujo else data[t_bujo]
+    #    #from_position = data[f_bujo][f_n_bujo] if from_nested_bujo else data[f_bujo]
+    #    print(data)
+    #    from_position = data[f_bujo]
+    #    if index in to_position:
+    #        click.echo(click.style('This note already exists in {}'.format(t_bujo), fg='red'))
+    #        return
+    #    else:
+    #        to_position.append(index)
+    #    if data[f_bujo] is None:
+    #        del from_position
+    #    _yaml_w(data)
 
 
 def _yaml_r():
