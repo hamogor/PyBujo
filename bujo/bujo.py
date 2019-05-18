@@ -37,35 +37,27 @@ def cli(ctx):
         show_bujo()
 
 
-# TODO - Flatten list to table_data for tabulate option to base command
 def show_bujo():
     """Displays all bujo's"""
     data = _yaml_r() or {}
     bujos = sorted([bujo for bujo in data])
     title = Figlet(font='slant')
-    for k, v in data.items():
-        if type(v) is not dict:
-            click.echo(click.style(k, fg='yellow'))
-            for index, item in enumerate(v, start=1):#
-                click.echo(click.style("  {}  {}".format(str(index), item)))
-            break
-        click.echo("")
-        click.echo(click.style(k, fg='yellow'))
-        for k1, v1, in v.items():
-            click.echo(click.style("- {}".format(k1), fg='green'))
-            for index, item in enumerate(v1, start=1):
-                click.echo(click.style("  {}  {}".format(str(index), item)))
+    if data:
+        for k, v in data.items():
+            if type(v) is not dict:
+                click.echo(click.style(k, fg='yellow'))
+                for index, item in enumerate(v, start=1):#
+                    click.echo(click.style("  {}  {}".format(str(index), item)))
+                break
             click.echo("")
-
-
-   #if data:
-   #    print(data)
-   #    for bujo in bujos:
-   #        # print(title.renderText(bujo))
-   #        for index, item in enumerate(data[bujo], start=1):
-   #            print(' '*3 + str(index) + ': ' + item)
-   #else:
-   #    click.echo(click.style("You don't have any notes saved!", fg='red'))
+            click.echo(click.style(k, fg='yellow'))
+            for k1, v1, in v.items():
+                click.echo(click.style("- {}".format(k1), fg='green'))
+                for index, item in enumerate(v1, start=1):
+                    click.echo(click.style("  {}  {}".format(str(index), item)))
+                click.echo("")
+    else:
+        click.echo(click.style("You don't have any notes saved!", fg='red'))
 
 
 @cli.command()
