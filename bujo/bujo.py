@@ -3,7 +3,6 @@ import getpass
 import os
 import yaml
 import pysnooper
-from tabulate import tabulate
 from pprint import pprint as pp
 
 from pyfiglet import Figlet
@@ -44,15 +43,19 @@ def show_bujo():
     data = _yaml_r() or {}
     bujos = sorted([bujo for bujo in data])
     title = Figlet(font='slant')
-    #print({j for i in data.values() for j in i})
     for k, v in data.items():
+        if type(v) is not dict:
+            click.echo(click.style(k, fg='yellow'))
+            for index, item in enumerate(v, start=1):#
+                click.echo(click.style("  {}  {}".format(str(index), item)))
+            break
         click.echo("")
         click.echo(click.style(k, fg='yellow'))
         for k1, v1, in v.items():
             click.echo(click.style("- {}".format(k1), fg='green'))
             for index, item in enumerate(v1, start=1):
                 click.echo(click.style("  {}  {}".format(str(index), item)))
-            click.echo("\n")
+            click.echo("")
 
 
    #if data:
