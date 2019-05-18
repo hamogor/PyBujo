@@ -37,6 +37,7 @@ def cli(ctx):
         show_bujo()
 
 
+# TODO - Figure out why only top bujo is being printed if a nested one is below it
 def show_bujo():
     """Displays all bujo's"""
     data = _yaml_r() or {}
@@ -45,12 +46,12 @@ def show_bujo():
     if data:
         for k, v in data.items():
             if type(v) is not dict:
-                click.echo(click.style(k, fg='yellow'))
+                click.echo(click.style(k, fg='magenta'))
                 for index, item in enumerate(v, start=1):#
                     click.echo(click.style("  {}  {}".format(str(index), item)))
                 break
             click.echo("")
-            click.echo(click.style(k, fg='yellow'))
+            click.echo(click.style(k, fg='magenta'))
             for k1, v1, in v.items():
                 click.echo(click.style("- {}".format(k1), fg='green'))
                 for index, item in enumerate(v1, start=1):
@@ -84,9 +85,8 @@ def ls(bujo):
 
 
 @cli.command()
-@click.option('--words', '-w', default=False, help='The custom text to print',
-              metavar='<str>')
-@click.option('--color', '-c', default=False, help='The color to print in')
+@click.option('--words', '-w', help='The custom text to print', metavar='<str>')
+@click.option('--color', '-c', help='The color to print in')
 def fig(words, color='black'):
     """Prints PyBujo or a cool message"""
     f = Figlet(font='slant')
@@ -98,11 +98,8 @@ def fig(words, color='black'):
 
 @cli.command()
 @click.argument('note', type=str)
-@click.option('-b', '--bujo', help='The name of the new journal to create',
-              metavar='<str>')
-# @click.option('-n', '--nest', help='Add a board inside a board',
-#              metavar='<str>')
-def add(note, bujo=None, nest=None):
+@click.option('-b', '--bujo', help='The name of the new journal to create', metavar='<str>')
+def add(note, bujo=None):
     """
     Adds a note to a bujo, if no bujo
     is specified writes to "General"
@@ -140,11 +137,10 @@ def rm(bujo, index):
     """
     data = _yaml_r()
     bujo = bujo.title()
-
     try:
         del data[bujo][index-1]
     except (KeyError, IndexError, TypeError):
-        click.echo(click.style('There is no note {} at index {}'.format(bujo, index), fg='red'))
+        click.echo(click.style('There is no note at index {} in {}'.format(index, bujo), fg='red'))
         return
     else:
         if data[bujo] is None:
@@ -153,11 +149,44 @@ def rm(bujo, index):
 
 
 @cli.command()
-@click.argument('note', type=str)
-@click.argument('from bujo', type=str)
-@click.argument('to bujo', type=str)
-def mv(f_bujo, t_bujo, note):
-    pass
+@click.argument('from_bujo', type=str)
+@click.option('--fromnested', '-fb', default=False, type=str)
+@click.argument('to_bujo', type=str)
+@click.option('--tonested', '-tb', default=False, type=str)
+@click.argument('index', type=int)
+@pysnooper.snoop()
+def mv(from_bujo, to_bujo, index, from_nested_bujo=None, to_nested_bujo=None):
+    data = _yaml_r()
+    f_bujo = from_bujo.title()
+    t_bujo = to_bujo.title()
+    if from_nested_bujo:
+        f_n_bujo = from_nested_bujo.title()
+    if to_nested_bujo:
+        t_n_bujo = to_nested_bujo.title()
+
+    try:
+        if f_n_bujo:
+            del data[f_bujo][f_n_bujo]
+        else:
+            del data[f_bujo]
+    except (KeyError, IndexError, TypeError):
+        if f_n_bujo:
+            click.echo(click.style('There is no note at index {} in {} - {}'.format(
+                index, f_bujo, f_n_bujo), fg='red'))
+        else:
+            click.echo(click.style('There is no note at index {} in {}'.format(index, f_bujo), fg='red'))
+        return
+    else:
+        to_position = data[t_bujo][t_n_bujo] if t_n_bujo else data[t_bujo]
+        from_position = data[f_bujo][f_n_bujo] if f_n_bujo else data[f_bujo]
+        if index in to_position:
+            click.echo(click.style('This note already exists in {}'.format(t_bujo), fg='red'))
+            return
+        else:
+            to_position.append(index)
+        if data[f_bujo] is None:
+            del from_position
+        _yaml_w(data)
 
 
 def _yaml_r():
