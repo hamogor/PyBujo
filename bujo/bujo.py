@@ -148,10 +148,12 @@ def mv(from_bujo, to_bujo, note, nested=None):
     if from_val in to_vals:
         click.echo(click.style("Note '{}' already exists in {}!".format(from_val, t_bujo), fg='red'))
     else:
-        # TODO - Handle exceptions and go over each way to add a key if --nested is set
+
         if nested:
-            data[nested][t_bujo].append(from_val)
-            del data[nested][f_bujo][note - 1]
+            try:
+                data[nested][t_bujo].append(from_val)
+            except KeyError:
+                click.echo(click.style("Bujo '{}' does not exist".format(nested), fg='red'))
         else:
             data[t_bujo].append(from_val)
             del data[nested][f_bujo][note - 1]
