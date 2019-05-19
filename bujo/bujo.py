@@ -12,25 +12,6 @@ _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-
-"""
-table_data = [
-    ['Heading1', 'Heading2'],
-    ['row1 column1', 'row1 column2'],
-    ['row2 column1', 'row2 column2'],
-    ['row3 column1', 'row3 column2']
-]
-
-+--------------+--------------+
-| Heading1     | Heading2     |
-+--------------+--------------+
-| row1 column1 | row1 column2 |
-| row2 column1 | row2 column2 |
-| row3 column1 | row3 column2 |
-+--------------+--------------+
-"""
-
-
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
 @click.pass_context
 def cli(ctx):
@@ -150,26 +131,32 @@ def rm(bujo, index):
 
 
 @cli.command()
+@click.option('-n', '--nested', type=str)
 @click.argument('from_bujo', type=str)
 @click.argument('to_bujo', type=str)
 @click.argument('note', type=int)
-def mv(from_bujo, to_bujo, note, from_nested_bujo=None, to_nested_bujo=None):
+def mv(from_bujo, to_bujo, note, nested=None):
     data = _yaml_r()
     f_bujo = from_bujo.title()
     t_bujo = to_bujo.title()
-    if from_nested_bujo:
-        f_n_bujo = from_nested_bujo.title()
-    if to_nested_bujo:
-        t_n_bujo = to_nested_bujo.title()
+    nested = nested.title()
 
-    a = nested_lookup(t_bujo, data)
-    for n in a:
-        print(n[note-1])
+    # nested_lookup returns a nested list
+    from_val = nested_lookup(f_bujo, data)[0][note-1]
+    to_vals = nested_lookup(t_bujo, data)[0]
 
-    # TODO -  Use nested_lookup for this
+    if from_val in to_vals:
+        click.echo(click.style("Note '{}' already exists in {}!".format(from_val, t_bujo), fg='red'))
+    else:
+        # TODO - Handle exceptions and go over each way to add a key if --nested is set
+        if nested:
+            data[nested][t_bujo].append(from_val)
+            del data[nested][f_bujo][note - 1]
+        else:
+            data[t_bujo].append(from_val)
+            del data[nested][f_bujo][note - 1]
 
-
-
+    _yaml_w(data)
 
 
 def _yaml_r():
