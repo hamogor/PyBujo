@@ -4,6 +4,7 @@ import os
 import yaml
 import pysnooper
 from pprint import pprint as pp
+from nested_lookup import nested_lookup, nested_update
 
 from pyfiglet import Figlet
 
@@ -150,13 +151,10 @@ def rm(bujo, index):
 
 @cli.command()
 @click.argument('from_bujo', type=str)
-#@click.option('-fb', default=False, type=str)
 @click.argument('to_bujo', type=str)
-#@click.option('-tb', default=False, type=str)
-@click.argument('index', type=int)
-def mv(from_bujo, to_bujo, index, from_nested_bujo=None, to_nested_bujo=None):
+@click.argument('note', type=int)
+def mv(from_bujo, to_bujo, note, from_nested_bujo=None, to_nested_bujo=None):
     data = _yaml_r()
-    print(data)
     f_bujo = from_bujo.title()
     t_bujo = to_bujo.title()
     if from_nested_bujo:
@@ -164,33 +162,14 @@ def mv(from_bujo, to_bujo, index, from_nested_bujo=None, to_nested_bujo=None):
     if to_nested_bujo:
         t_n_bujo = to_nested_bujo.title()
 
-        # TODO - Rewrite this the opposite way around so the note is appended to t_bujo before being removed from f_bujo
+    a = nested_lookup(t_bujo, data)
+    for n in a:
+        print(n[note-1])
 
-    #try:
-    #    if from_nested_bujo:
-    #        del data[f_bujo][f_n_bujo]
-    #    else:
-    #        del data[f_bujo]
-    #except (KeyError, IndexError, TypeError):
-    #    if from_nested_bujo:
-    #        click.echo(click.style('There is no note at index {} in {} - {}'.format(
-    #            index, f_bujo, f_n_bujo), fg='red'))
-    #    else:
-    #        click.echo(click.style('There is no note at index {} in {}'.format(index, f_bujo), fg='red'))
-    #    return
-    #else:
-    #    to_position = data[t_bujo][t_n_bujo] if to_nested_bujo else data[t_bujo]
-    #    #from_position = data[f_bujo][f_n_bujo] if from_nested_bujo else data[f_bujo]
-    #    print(data)
-    #    from_position = data[f_bujo]
-    #    if index in to_position:
-    #        click.echo(click.style('This note already exists in {}'.format(t_bujo), fg='red'))
-    #        return
-    #    else:
-    #        to_position.append(index)
-    #    if data[f_bujo] is None:
-    #        del from_position
-    #    _yaml_w(data)
+    # TODO -  Use nested_lookup for this
+
+
+
 
 
 def _yaml_r():
