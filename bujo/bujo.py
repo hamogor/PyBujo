@@ -145,6 +145,8 @@ def mv(from_bujo, to_bujo, note, nested=None):
     from_val = nested_lookup(f_bujo, data)[0][note-1]
     to_vals = nested_lookup(t_bujo, data)[0]
 
+    # Just use nested update where to_bujo is the key and data is the document..dummy
+
     if from_val in to_vals:
         click.echo(click.style("Note '{}' already exists in {}!".format(from_val, t_bujo), fg='red'))
     else:
