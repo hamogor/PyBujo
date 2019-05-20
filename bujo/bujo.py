@@ -140,11 +140,19 @@ def mv(from_bujo, to_bujo, note, nested=None):
     t_bujo = to_bujo.title()
 
     # nested_lookup returns a nested list
-    from_vals = nested_lookup(f_bujo, data)[0]
-    to_vals = nested_lookup(t_bujo, data)[0]
+    try:
+        from_vals = nested_lookup(f_bujo, data)[0]
+    except (KeyError, IndexError, TypeError):
+        error("Bujo '{}' does not exist".format(f_bujo))
+        return
+    try:
+        to_vals = nested_lookup(t_bujo, data)[0]
+    except (KeyError, IndexError, TypeError):
+        error("Bujo '{}' does not exist".format(f_bujo))
+        return
 
     if from_vals[note-1] in to_vals:
-        click.echo(click.style("Note '{}' already exists in {}!".format(from_vals, t_bujo), fg='red'))
+        error("Note '{}' already exists in {}!".format(from_vals[note-1], t_bujo))
     else:
         try:
             to_vals.append(from_vals[note-1])  # Add our note to our list
@@ -154,9 +162,13 @@ def mv(from_bujo, to_bujo, note, nested=None):
             nested_update([data], f_bujo, from_vals)
             nested_update([data], t_bujo, to_vals)
         except KeyError:
-            click.echo(click.style("Bujo '{}' does not exist".format(nested), fg='red'))
+            error("Bujo '{}' does not exist".format(f_bujo))
 
     _yaml_w(data)
+
+
+def error(error):
+    return click.echo(click.style(error, fg='red'))
 
 
 def _yaml_r():
