@@ -4,14 +4,17 @@ import os
 import yaml
 import pysnooper
 from pprint import pprint as pp
-from nested_lookup import nested_lookup, nested_update, get_all_keys
-
 from pyfiglet import Figlet
+from nested_lookup import (nested_lookup, nested_update,
+                           get_all_keys, get_occurrence_of_value,
+                           get_occurrence_of_key)
+
 
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
+# TODO - Make every command take which bujo to work on as first argument and pass that context
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
 @click.pass_context
 def cli(ctx):
@@ -19,20 +22,49 @@ def cli(ctx):
         show_bujo()
 
 
-# TODO - Figure out why only top bujo is being printed if a nested one is below it
+# TODO - Sort out indentation
 def show_bujo():
     """Displays all bujo's"""
     data = _yaml_r() or {}
-    #bujos = sorted([bujo for bujo in data])
-
     bujos = get_all_keys(data)
     for bujo in bujos:
         notes = nested_lookup(bujo, [data])
-        if isinstance(notes[0], list):
-            click.echo(click.style("- {}".format(bujo), fg='magenta'))
+        if isinstance(notes[0], dict):
+            click.echo(click.style("* {}".format(bujo), fg='yellow'))
+        elif isinstance(notes[0], list):
+            click.echo(click.style(" - {}".format(bujo), fg='magenta'))
             for index, note in enumerate(notes[0], start=1):
                 click.echo(click.style(" {}  {}".format(str(index), note)))
             click.echo("")
+
+
+@cli.command()
+@click.argument('bujo', type=str)
+@click.argument('note', type=str)
+def add(note, nested=None, bujo=None):
+    """
+    Adds a note to a bujo, if no bujo is specified
+    writes to 'General'
+    """
+    keys = []
+    data = _yaml_r() or {}
+    bujo = bujo.title()
+    bujos = get_all_keys(data)
+    occurrence_of_bujo = get_occurrence_of_key(data, bujo)
+    if occurrence_of_bujo > 1:
+        error("Multiple bujos called '{}' detected".format(bujo))
+        error("")  # Blank Line
+        list_ = nested_lookup(bujo, data)
+        print(list_)
+        for index, li in enumerate(list_, start=1):
+            click.echo(click.style("{} {}".format(str(index), bujo), fg='magenta'))
+            for note in li:
+                click.echo(click.style("- {}".format(note)))
+            click.echo("")
+        choices = ""
+        chosen_bujo = input(
+            "Which bujo should '{}' be added to '1/2/..' >> ".format(note, choices))
+        # Index chosen_bujo against list_ index then check data for a list that matches and nested update
 
 
 @cli.command()
@@ -41,10 +73,14 @@ def ls(bujo):
     """Lists all notes in a specific bujo"""
     data = _yaml_r() or {}
     bujo = bujo.title()
-    notes = nested_lookup(
-        key = bujo,
-        document = data,
-    )
+    try:
+        notes = nested_lookup(
+            key = bujo,
+            document = data,
+        )
+    except (KeyError, IndexError, TypeError):
+        error("Bujo '{}' does not exist".format(bujo))
+
     click.echo(click.style("- {}".format(bujo), fg='magenta'))
     for index, note in enumerate(notes[0], start=1):
         click.echo(" {}  {}".format(str(index), note))
@@ -62,32 +98,32 @@ def fig(words, color='black'):
         click.echo(click.style(f.renderText(getpass.getuser()), fg=color))
 
 
-@cli.command()
-@click.argument('note', type=str)
-@click.option('-b', '--bujo', help='The name of the new journal to create', metavar='<str>')
-def add(note, bujo=None):
-    """
-    Adds a note to a bujo, if no bujo
-    is specified writes to "General"
-
-    """
-    data = _yaml_r() or {}
-
-    if bujo is None:
-        bujo = 'General'
-    else:
-        bujo = bujo.title()
-
-    try:
-        if note not in data[bujo]:
-            data[bujo].append(note)
-            success("'{}' added to '{}'".format(note, bujo))
-        else:
-            error("You've already made this note")
-    except KeyError:
-        data[bujo] = [note]
-
-    _yaml_w(data)
+#@cli.command()
+#@click.argument('note', type=str)
+#@click.option('-b', '--bujo', help='The name of the new journal to create', metavar='<str>')
+#def add(note, bujo=None):
+#    """
+#    Adds a note to a bujo, if no bujo
+#    is specified writes to "General"
+#
+#    """
+#    data = _yaml_r() or {}
+#
+#    if bujo is None:
+#        bujo = 'General'
+#    else:
+#        bujo = bujo.title()
+#
+#    try:
+#        if note not in data[bujo]:
+#            data[bujo].append(note)
+#            success("'{}' added to '{}'".format(note, bujo))
+#        else:
+#            error("You've already made this note")
+#    except KeyError:
+#        data[bujo] = [note]
+#
+#    _yaml_w(data)
 
 
 @cli.command()
@@ -152,8 +188,18 @@ def mv(from_bujo, to_bujo, index, nested=None):
     _yaml_w(data)
 
 
+def find_parent_keys(d, target_key, parent_key=None):
+  for k, v in d.items():
+    if k == target_key:
+      yield parent_key
+    if isinstance(v, dict):
+      for res in find_parent_keys(v, target_key, k):
+        yield res
+
+
 def error(error):
     return click.echo(click.style(error, fg='red'))
+
 
 def success(success):
     return click.echo(click.style(success, fg='green'))
