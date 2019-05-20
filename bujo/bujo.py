@@ -29,7 +29,7 @@ def show_bujo():
         for k, v in data.items():
             if type(v) is not dict:
                 click.echo(click.style(k, fg='magenta'))
-                for index, item in enumerate(v, start=1):#
+                for index, item in enumerate(v, start=1):
                     click.echo(click.style("  {}  {}".format(str(index), item)))
                 break
             click.echo("")
@@ -131,7 +131,6 @@ def rm(bujo, index):
 
 
 @cli.command()
-@click.option('-n', '--nested', type=str)
 @click.argument('from_bujo', type=str)
 @click.argument('to_bujo', type=str)
 @click.argument('note', type=int)
@@ -139,26 +138,23 @@ def mv(from_bujo, to_bujo, note, nested=None):
     data = _yaml_r()
     f_bujo = from_bujo.title()
     t_bujo = to_bujo.title()
-    nested = nested.title()
 
     # nested_lookup returns a nested list
-    from_val = nested_lookup(f_bujo, data)[0][note-1]
+    from_vals = nested_lookup(f_bujo, data)[0]
     to_vals = nested_lookup(t_bujo, data)[0]
 
-    # Just use nested update where to_bujo is the key and data is the document..dummy
-
-    if from_val in to_vals:
-        click.echo(click.style("Note '{}' already exists in {}!".format(from_val, t_bujo), fg='red'))
+    if from_vals[note-1] in to_vals:
+        click.echo(click.style("Note '{}' already exists in {}!".format(from_vals, t_bujo), fg='red'))
     else:
+        try:
+            to_vals.append(from_vals[note-1])  # Add our note to our list
+            del from_vals[note-1]  # Delete from the place we got it
 
-        if nested:
-            try:
-                data[nested][t_bujo].append(from_val)
-            except KeyError:
-                click.echo(click.style("Bujo '{}' does not exist".format(nested), fg='red'))
-        else:
-            data[t_bujo].append(from_val)
-            del data[nested][f_bujo][note - 1]
+            # update the value of the key to that list
+            nested_update([data], f_bujo, from_vals)
+            nested_update([data], t_bujo, to_vals)
+        except KeyError:
+            click.echo(click.style("Bujo '{}' does not exist".format(nested), fg='red'))
 
     _yaml_w(data)
 
