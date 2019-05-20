@@ -35,45 +35,19 @@ def show_bujo():
             click.echo("")
 
 
-   #if data:
-   #    for k, v in data.items():
-   #        if type(v) is not dict:
-   #            click.echo(click.style(k, fg='magenta'))
-   #            for index, item in enumerate(v, start=1):
-   #                click.echo(click.style("  {}  {}".format(str(index), item)))
-   #            break
-   #        click.echo("")
-   #        click.echo(click.style(k, fg='magenta'))
-   #        for k1, v1, in v.items():
-   #            click.echo(click.style("- {}".format(k1), fg='green'))
-   #            for index, item in enumerate(v1, start=1):
-   #                click.echo(click.style("  {}  {}".format(str(index), item)))
-   #            click.echo("")
-   #else:
-   #    click.echo(click.style("You don't have any notes saved!", fg='red'))
-
-
 @cli.command()
 @click.argument('bujo', type=str)
 def ls(bujo):
     """Lists all notes in a specific bujo"""
-    output = []
     data = _yaml_r() or {}
     bujo = bujo.title()
-    entries = data.get(bujo)
-    title = Figlet(font='slant')
-
-    if data:
-        index = 1
-        output.append(title.renderText(bujo))
-        for item in entries:
-            output.append(str(index) + ': ' + item)
-            index += 1
-        for line in output:
-            click.echo(line)
-        click.echo('\n')
-    else:
-        show_bujo()
+    notes = nested_lookup(
+        key = bujo,
+        document = data,
+    )
+    click.echo(click.style("- {}".format(bujo), fg='magenta'))
+    for index, note in enumerate(notes[0], start=1):
+        click.echo(" {}  {}".format(str(index), note))
 
 
 @cli.command()
