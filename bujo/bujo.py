@@ -97,9 +97,9 @@ def add(note, bujo=None):
     try:
         if note not in data[bujo]:
             data[bujo].append(note)
-            click.echo(click.style('"{}" added to {}'.format(note, bujo), fg='green'))
+            success("'{}' added to '{}'".format(note, bujo))
         else:
-            click.echo(click.style("You've already made this note", fg='red'))
+            error("You've already made this note")
     except KeyError:
         data[bujo] = [note]
 
@@ -122,7 +122,7 @@ def rm(bujo, index):
     try:
         del data[bujo][index-1]
     except (KeyError, IndexError, TypeError):
-        click.echo(click.style('There is no note at index {} in {}'.format(index, bujo), fg='red'))
+        error("There is no note at index {} in {}".format(index, bujo))
         return
     else:
         if data[bujo] is None:
@@ -169,6 +169,9 @@ def mv(from_bujo, to_bujo, note, nested=None):
 
 def error(error):
     return click.echo(click.style(error, fg='red'))
+
+def success(success):
+    return click.echo(click.style(success, fg='green'))
 
 
 def _yaml_r():
