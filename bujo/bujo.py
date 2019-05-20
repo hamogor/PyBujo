@@ -4,7 +4,7 @@ import os
 import yaml
 import pysnooper
 from pprint import pprint as pp
-from nested_lookup import nested_lookup, nested_update
+from nested_lookup import nested_lookup, nested_update, get_all_keys
 
 from pyfiglet import Figlet
 
@@ -23,24 +23,34 @@ def cli(ctx):
 def show_bujo():
     """Displays all bujo's"""
     data = _yaml_r() or {}
-    bujos = sorted([bujo for bujo in data])
-    title = Figlet(font='slant')
-    if data:
-        for k, v in data.items():
-            if type(v) is not dict:
-                click.echo(click.style(k, fg='magenta'))
-                for index, item in enumerate(v, start=1):
-                    click.echo(click.style("  {}  {}".format(str(index), item)))
-                break
+    #bujos = sorted([bujo for bujo in data])
+
+    bujos = get_all_keys(data)
+    for bujo in bujos:
+        notes = nested_lookup(bujo, [data])
+        if isinstance(notes[0], list):
+            click.echo(click.style("- {}".format(bujo), fg='magenta'))
+            for index, note in enumerate(notes[0], start=1):
+                click.echo(click.style(" {}  {}".format(str(index), note)))
             click.echo("")
-            click.echo(click.style(k, fg='magenta'))
-            for k1, v1, in v.items():
-                click.echo(click.style("- {}".format(k1), fg='green'))
-                for index, item in enumerate(v1, start=1):
-                    click.echo(click.style("  {}  {}".format(str(index), item)))
-                click.echo("")
-    else:
-        click.echo(click.style("You don't have any notes saved!", fg='red'))
+
+
+   #if data:
+   #    for k, v in data.items():
+   #        if type(v) is not dict:
+   #            click.echo(click.style(k, fg='magenta'))
+   #            for index, item in enumerate(v, start=1):
+   #                click.echo(click.style("  {}  {}".format(str(index), item)))
+   #            break
+   #        click.echo("")
+   #        click.echo(click.style(k, fg='magenta'))
+   #        for k1, v1, in v.items():
+   #            click.echo(click.style("- {}".format(k1), fg='green'))
+   #            for index, item in enumerate(v1, start=1):
+   #                click.echo(click.style("  {}  {}".format(str(index), item)))
+   #            click.echo("")
+   #else:
+   #    click.echo(click.style("You don't have any notes saved!", fg='red'))
 
 
 @cli.command()
@@ -133,8 +143,8 @@ def rm(bujo, index):
 @cli.command()
 @click.argument('from_bujo', type=str)
 @click.argument('to_bujo', type=str)
-@click.argument('note', type=int)
-def mv(from_bujo, to_bujo, note, nested=None):
+@click.argument('index', type=int)
+def mv(from_bujo, to_bujo, index, nested=None):
     data = _yaml_r()
     f_bujo = from_bujo.title()
     t_bujo = to_bujo.title()
@@ -151,16 +161,17 @@ def mv(from_bujo, to_bujo, note, nested=None):
         error("Bujo '{}' does not exist".format(f_bujo))
         return
 
-    if from_vals[note-1] in to_vals:
-        error("Note '{}' already exists in {}!".format(from_vals[note-1], t_bujo))
+    if from_vals[index-1] in to_vals:
+        error("Note '{}' already exists in {}!".format(from_vals[index -1], t_bujo))
     else:
         try:
-            to_vals.append(from_vals[note-1])  # Add our note to our list
-            del from_vals[note-1]  # Delete from the place we got it
+            to_vals.append(from_vals[index-1])  # Add our note to our list
+            del from_vals[index-1]  # Delete from the place we got it
 
             # update the value of the key to that list
             nested_update([data], f_bujo, from_vals)
             nested_update([data], t_bujo, to_vals)
+            success("Moved '{}' from '{}' to '{}'".format(from_vals[index-1], f_bujo, t_bujo))
         except KeyError:
             error("Bujo '{}' does not exist".format(f_bujo))
 

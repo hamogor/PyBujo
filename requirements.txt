@@ -2,3 +2,4 @@ Click
 PyFiglet
 pyyaml
 colorama
+nested-lookup
