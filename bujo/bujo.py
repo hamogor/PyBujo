@@ -44,8 +44,7 @@ def show_bujo():
 @click.argument('note', type=str)
 def add(note, nested=None, bujo=None):
     """
-    Adds a note to a bujo, if no bujo is specified
-    writes to 'General'
+    Adds a note to a bujo, a name must be specified
     """
     keys = []
     data = _yaml_r() or {}
@@ -78,6 +77,34 @@ def add(note, nested=None, bujo=None):
         nested_update([data], bujo, list_)
     _yaml_w(data)
 
+
+@cli.command()
+@click.argument('bujo', type=str)
+@click.argument('index', type=int)
+def rm(bujo, index):
+    """
+    Deletes a note from a bujo
+    Removes empty bujo's
+    :param bujo: The bujo to delete from
+    :param index: The index of the note
+    :return:
+    """
+    data = _yaml_r()
+    bujo = bujo.title()
+
+    occurrence_of_bujo = get_occurrence_of_key(data, bujo)
+
+    if occurrence_of_bujo > 1:
+        error("ERROR: Multiple bujos called '{}' detected on top level".format(bujo))
+        error("You'll have to rectify this in {}".format(_BUJO_PATH))
+        error("")  # Blank Line
+    else:
+        notes = nested_lookup(bujo, data)
+        notes[0].pop(index-1)
+        nested_update([data], bujo, notes)
+        _yaml_w(data)
+
+
 @cli.command()
 @click.argument('bujo', type=str)
 def ls(bujo):
@@ -107,58 +134,6 @@ def fig(words, color='black'):
         click.echo(click.style(f.renderText(words), fg=color))
     else:
         click.echo(click.style(f.renderText(getpass.getuser()), fg=color))
-
-
-#@cli.command()
-#@click.argument('note', type=str)
-#@click.option('-b', '--bujo', help='The name of the new journal to create', metavar='<str>')
-#def add(note, bujo=None):
-#    """
-#    Adds a note to a bujo, if no bujo
-#    is specified writes to "General"
-#
-#    """
-#    data = _yaml_r() or {}
-#
-#    if bujo is None:
-#        bujo = 'General'
-#    else:
-#        bujo = bujo.title()
-#
-#    try:
-#        if note not in data[bujo]:
-#            data[bujo].append(note)
-#            success("'{}' added to '{}'".format(note, bujo))
-#        else:
-#            error("You've already made this note")
-#    except KeyError:
-#        data[bujo] = [note]
-#
-#    _yaml_w(data)
-
-
-@cli.command()
-@click.argument('bujo', type=str)
-@click.argument('index', type=int)
-def rm(bujo, index):
-    """
-    Deletes a note from a bujo
-    Removes empty bujo's
-    :param bujo: The bujo to delete from
-    :param index: The index of the note
-    :return:
-    """
-    data = _yaml_r()
-    bujo = bujo.title()
-    try:
-        del data[bujo][index-1]
-    except (KeyError, IndexError, TypeError):
-        error("There is no note at index {} in {}".format(index, bujo))
-        return
-    else:
-        if data[bujo] is None:
-            del data[bujo]
-        _yaml_w(data)
 
 
 @cli.command()
