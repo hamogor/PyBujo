@@ -9,7 +9,7 @@ from nested_lookup import (nested_lookup, nested_update,
                            get_all_keys, get_occurrence_of_value,
                            get_occurrence_of_key)
 
-
+yaml.add_representer(type(None), lambda s, _: s.represent_scalar('tag:yaml.org,2002:null', ''))
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -42,9 +42,9 @@ def show_bujo():
 @cli.command()
 @click.argument('bujo', type=str)
 @click.argument('note', type=str)
-def add(note, nested=None, bujo=None):
+def add(note, bujo=None):
     """
-    Adds a note to a bujo, a name must be specified
+    Add a note to a bujo, a name must be specified
     """
     keys = []
     data = _yaml_r() or {}
@@ -75,6 +75,20 @@ def add(note, nested=None, bujo=None):
         list_ = nested_lookup(bujo, data)
         list_[0].append(note)
         nested_update([data], bujo, list_)
+    _yaml_w(data)
+
+
+@cli.command()
+@click.argument('board', type=str)
+@click.argument('bujos', type=str, nargs=-1)
+@pysnooper.snoop()
+def board(board, bujos):
+    """Creates a new board that has n number of bujos inside it"""
+    data = _yaml_r() or {}
+    board = board.title()
+    data[board] = {}
+    for bujo in bujos:
+        data[board][bujo] = [None]
     _yaml_w(data)
 
 
@@ -110,17 +124,20 @@ def rm(bujo, index):
 def ls(bujo):
     """Lists all notes in a specific bujo"""
     data = _yaml_r() or {}
+    pp(data)
     bujo = bujo.title()
     try:
         notes = nested_lookup(
-            key = bujo,
-            document = data,
+            key=bujo,
+            document=data,
         )
     except (KeyError, IndexError, TypeError):
         error("Bujo '{}' does not exist".format(bujo))
 
     click.echo(click.style("- {}".format(bujo), fg='magenta'))
     for index, note in enumerate(notes[0], start=1):
+        if note is None:
+            continue
         click.echo(" {}  {}".format(str(index), note))
 
 
