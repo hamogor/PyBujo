@@ -23,6 +23,7 @@ def cli(ctx):
 
 
 # TODO - Sort out indentation
+# TODO - Unnested bujo values being appended and printed as nested value
 def show_bujo():
     """Displays all bujo's"""
     data = _yaml_r() or {}
@@ -51,21 +52,31 @@ def add(note, nested=None, bujo=None):
     bujo = bujo.title()
     bujos = get_all_keys(data)
     occurrence_of_bujo = get_occurrence_of_key(data, bujo)
-    if occurrence_of_bujo > 1:
+
+    if occurrence_of_bujo > 1 and len(data[bujo]) is 1:  # This check always returns 1, it shouldnt. 
+        error("ERROR: Multiple bujos called '{}' detected on top level".format(bujo))
+        error("You'll have to rectify this in {}".format(_BUJO_PATH))
+        error("")  # Blank Line
+
+    elif occurrence_of_bujo > 1:
         error("Multiple bujos called '{}' detected".format(bujo))
         error("")  # Blank Line
         list_ = nested_lookup(bujo, data)
-        print(list_)
         for index, li in enumerate(list_, start=1):
             click.echo(click.style("{} {}".format(str(index), bujo), fg='magenta'))
-            for note in li:
-                click.echo(click.style("- {}".format(note)))
+            for item in li:
+                click.echo(click.style("- {}".format(item)))
             click.echo("")
         choices = ""
         chosen_bujo = input(
-            "Which bujo should '{}' be added to '1/2/..' >> ".format(note, choices))
+            "Which bujo should '{}' be added to '1/2/..' >> ".format(note))
         # Index chosen_bujo against list_ index then check data for a list that matches and nested update
-
+        # Go look for a dict with a matching list_[chosen_bujo-1] first in data
+    elif occurrence_of_bujo is 1:
+        list_ = nested_lookup(bujo, data)
+        list_[0].append(note)
+        nested_update([data], bujo, list_)
+    _yaml_w(data)
 
 @cli.command()
 @click.argument('bujo', type=str)
@@ -176,25 +187,17 @@ def mv(from_bujo, to_bujo, index, nested=None):
     else:
         try:
             to_vals.append(from_vals[index-1])  # Add our note to our list
+            original_value = from_vals[index-1]
             del from_vals[index-1]  # Delete from the place we got it
 
             # update the value of the key to that list
             nested_update([data], f_bujo, from_vals)
             nested_update([data], t_bujo, to_vals)
-            success("Moved '{}' from '{}' to '{}'".format(from_vals[index-1], f_bujo, t_bujo))
+            success("Moved '{}' from '{}' to '{}'".format(original_value, f_bujo, t_bujo))
         except KeyError:
             error("Bujo '{}' does not exist".format(f_bujo))
 
     _yaml_w(data)
-
-
-def find_parent_keys(d, target_key, parent_key=None):
-  for k, v in d.items():
-    if k == target_key:
-      yield parent_key
-    if isinstance(v, dict):
-      for res in find_parent_keys(v, target_key, k):
-        yield res
 
 
 def error(error):
