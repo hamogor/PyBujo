@@ -35,10 +35,13 @@ def show_bujo():
         elif isinstance(notes[0], list):
             click.echo(click.style(" - {}".format(bujo), fg='magenta'))
             for index, note in enumerate(notes[0], start=1):
+                if note is None:
+                    continue
                 click.echo(click.style(" {}  {}".format(str(index), note)))
             click.echo("")
 
 
+# TODO - We're not even checking for a valid bujo here. This needs complete reworking.
 @cli.command()
 @click.argument('bujo', type=str)
 @click.argument('note', type=str)
@@ -76,22 +79,26 @@ def add(note, bujo=None):
         list_[0].append(note)
         nested_update([data], bujo, list_)
     _yaml_w(data)
+    success("Added '{}' to {}".format(note, bujo))
 
 
+# TODO - Check if the top level board already exists and error
 @cli.command()
 @click.argument('board', type=str)
 @click.argument('bujos', type=str, nargs=-1)
-@pysnooper.snoop()
 def board(board, bujos):
     """Creates a new board that has n number of bujos inside it"""
     data = _yaml_r() or {}
     board = board.title()
     data[board] = {}
+    success("Created new board {} with bujos:".format(board))
     for bujo in bujos:
+        success("- {}".format(bujo))
         data[board][bujo] = [None]
     _yaml_w(data)
 
 
+# TODO - Exceptions
 @cli.command()
 @click.argument('bujo', type=str)
 @click.argument('index', type=int)
@@ -114,11 +121,13 @@ def rm(bujo, index):
         error("")  # Blank Line
     else:
         notes = nested_lookup(bujo, data)
+        removed = notes[0][index-1]
         notes[0].pop(index-1)
-        nested_update([data], bujo, notes)
         _yaml_w(data)
+        success("Removed '{}' from {}".format(removed, bujo))
 
 
+# TODO - Exceptions
 @cli.command()
 @click.argument('bujo', type=str)
 def ls(bujo):
@@ -141,6 +150,7 @@ def ls(bujo):
         click.echo(" {}  {}".format(str(index), note))
 
 
+# TODO - Make use of this or get rid
 @cli.command()
 @click.option('--words', '-w', help='The custom text to print', metavar='<str>')
 @click.option('--color', '-c', help='The color to print in')
@@ -157,7 +167,7 @@ def fig(words, color='black'):
 @click.argument('from_bujo', type=str)
 @click.argument('to_bujo', type=str)
 @click.argument('index', type=int)
-def mv(from_bujo, to_bujo, index, nested=None):
+def mv(from_bujo, to_bujo, index):
     data = _yaml_r()
     f_bujo = from_bujo.title()
     t_bujo = to_bujo.title()
