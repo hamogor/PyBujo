@@ -13,6 +13,7 @@ yaml.add_representer(type(None), lambda s, _: s.represent_scalar('tag:yaml.org,2
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
+# TODO - Enforce boards
 
 # TODO - Make every command take which bujo to work on as first argument and pass that context
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
@@ -41,45 +42,60 @@ def show_bujo():
             click.echo("")
 
 
-# TODO - We're not even checking for a valid bujo here. This needs complete reworking.
 @cli.command()
 @click.argument('bujo', type=str)
 @click.argument('note', type=str)
-def add(note, bujo=None):
+def add(bujo, note):
     """
-    Add a note to a bujo, a name must be specified
+    Add a note to a bujo, if the bujo doesn't exist it is created instead
     """
     keys = []
     data = _yaml_r() or {}
     bujo = bujo.title()
     bujos = get_all_keys(data)
-    occurrence_of_bujo = get_occurrence_of_key(data, bujo)
-
-    if occurrence_of_bujo > 1 and len(data[bujo]) is 1:  # This check always returns 1, it shouldnt. 
-        error("ERROR: Multiple bujos called '{}' detected on top level".format(bujo))
-        error("You'll have to rectify this in {}".format(_BUJO_PATH))
-        error("")  # Blank Line
-
-    elif occurrence_of_bujo > 1:
-        error("Multiple bujos called '{}' detected".format(bujo))
-        error("")  # Blank Line
+    if get_occurrence_of_key(data, bujo) > 1:
+        error("Multiple bujo's named {}".format(bujo))
         list_ = nested_lookup(bujo, data)
-        for index, li in enumerate(list_, start=1):
-            click.echo(click.style("{} {}".format(str(index), bujo), fg='magenta'))
-            for item in li:
-                click.echo(click.style("- {}".format(item)))
-            click.echo("")
-        choices = ""
-        chosen_bujo = input(
-            "Which bujo should '{}' be added to '1/2/..' >> ".format(note))
-        # Index chosen_bujo against list_ index then check data for a list that matches and nested update
-        # Go look for a dict with a matching list_[chosen_bujo-1] first in data
-    elif occurrence_of_bujo is 1:
-        list_ = nested_lookup(bujo, data)
-        list_[0].append(note)
-        nested_update([data], bujo, list_)
-    _yaml_w(data)
-    success("Added '{}' to {}".format(note, bujo))
+
+# TODO - We're not even checking for a valid bujo here. This needs complete reworking.
+#@cli.command()
+#@click.argument('bujo', type=str)
+#@click.argument('note', type=str)
+#def add(note, bujo=None):
+#    """
+#    Add a note to a bujo, a name must be specified
+#    """
+#    keys = []
+#    data = _yaml_r() or {}
+#    bujo = bujo.title()
+#    bujos = get_all_keys(data)
+#    occurrence_of_bujo = get_occurrence_of_key(data, bujo)
+#
+#    if occurrence_of_bujo > 1 and len(data[bujo]) is 1:  # This check always returns 1, it shouldnt. 
+#        error("ERROR: Multiple bujos called '{}' detected on top level".format(bujo))
+#        error("You'll have to rectify this in {}".format(_BUJO_PATH))
+#        error("")  # Blank Line
+#
+#    elif occurrence_of_bujo > 1:
+#        error("Multiple bujos called '{}' detected".format(bujo))
+#        error("")  # Blank Line
+#        list_ = nested_lookup(bujo, data)
+#        for index, li in enumerate(list_, start=1):
+#            click.echo(click.style("{} {}".format(str(index), bujo), fg='magenta'))
+#            for item in li:
+#                click.echo(click.style("- {}".format(item)))
+#            click.echo("")
+#        choices = ""
+#        chosen_bujo = input(
+#            "Which bujo should '{}' be added to '1/2/..' >> ".format(note))
+#        # Index chosen_bujo against list_ index then check data for a list that matches and nested update
+#        # Go look for a dict with a matching list_[chosen_bujo-1] first in data
+#    elif occurrence_of_bujo is 1:
+#        list_ = nested_lookup(bujo, data)
+#        list_[0].append(note)
+#        nested_update([data], bujo, list_)
+#    _yaml_w(data)
+#    success("Added '{}' to {}".format(note, bujo))
 
 
 # TODO - Check if the top level board already exists and error
@@ -93,8 +109,8 @@ def board(board, bujos):
     data[board] = {}
     success("Created new board {} with bujos:".format(board))
     for bujo in bujos:
-        success("- {}".format(bujo))
-        data[board][bujo] = [None]
+        success("- {}".format(bujo.title()))
+        data[board][bujo.title()] = [None]
     _yaml_w(data)
 
 
@@ -114,17 +130,23 @@ def rm(bujo, index):
     bujo = bujo.title()
 
     occurrence_of_bujo = get_occurrence_of_key(data, bujo)
+    if occurrence_of_bujo is 0:
+        error("Bujo '{}' does not exist or is empty".format(bujo))
+        exit()
 
     if occurrence_of_bujo > 1:
         error("ERROR: Multiple bujos called '{}' detected on top level".format(bujo))
         error("You'll have to rectify this in {}".format(_BUJO_PATH))
         error("")  # Blank Line
     else:
-        notes = nested_lookup(bujo, data)
-        removed = notes[0][index-1]
-        notes[0].pop(index-1)
-        _yaml_w(data)
-        success("Removed '{}' from {}".format(removed, bujo))
+        try:
+            notes = nested_lookup(bujo, data)
+            removed = notes[0][index-1]
+            notes[0].pop(index-1)
+            _yaml_w(data)
+            success("Removed '{}' from {}".format(removed, bujo))
+        except (KeyError, IndexError, TypeError):
+            error("There is no note in '{}' at index {}".format(bujo, index))
 
 
 # TODO - Exceptions
@@ -133,7 +155,6 @@ def rm(bujo, index):
 def ls(bujo):
     """Lists all notes in a specific bujo"""
     data = _yaml_r() or {}
-    pp(data)
     bujo = bujo.title()
     try:
         notes = nested_lookup(
@@ -143,11 +164,14 @@ def ls(bujo):
     except (KeyError, IndexError, TypeError):
         error("Bujo '{}' does not exist".format(bujo))
 
-    click.echo(click.style("- {}".format(bujo), fg='magenta'))
-    for index, note in enumerate(notes[0], start=1):
-        if note is None:
-            continue
-        click.echo(" {}  {}".format(str(index), note))
+    try:
+        click.echo(click.style("- {}".format(bujo), fg='magenta'))
+        for index, note in enumerate(notes[0], start=1):
+            if note is None:
+                continue
+            click.echo(" {}  {}".format(str(index), note))
+    except (IndexError, TypeError):
+        error("Bujo '{}' does not exist or is empty".format(bujo))
 
 
 # TODO - Make use of this or get rid
