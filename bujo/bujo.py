@@ -42,6 +42,7 @@ def board(board, bujos):
         _print("- {}".format(bujo.title()))
 
 
+# TODO - Remove non types when enumerating lists instead of just skipping them
 @cli.command()
 @click.argument('bujo', type=str)
 @click.argument('note', type=str, nargs=1)
@@ -53,7 +54,7 @@ def add(bujo, note):
     try:
         if data[bujo.upper()]:  # If the bujo specified is actually a board
             _error("'{}' is a board not a bujo!".format(bujo.title()))
-            _title("Valid bujo's in {}:".format(bujo.title()))
+            _info("Valid bujo's in {}:".format(bujo.title()))
             for index, item in enumerate(data[bujo.upper()], start=1):
                 _print("{} {}".format(str(index), item.title()))
                 # TODO - Edit board from add
@@ -67,7 +68,7 @@ def add(bujo, note):
 
             # Print the duplicates and ask which one is to be added to
             for index, notes in enumerate(bujos, start=1):
-                _title("{} {}".format(index, bujo.title()))
+                _info("{} {}".format(index, bujo.title()))
                 for note in notes:
                     _print("- {}".format(note))
 
@@ -110,6 +111,55 @@ def add(bujo, note):
             _success("Added '{}' to '{} -> {}'".format(note, parent_key.title(), bujo.title()))
 
 
+@cli.command()
+@click.argument('bujo', type=str)
+@click.argument('note')
+def rm(bujo, note):
+    """Deletes a note from a bujo"""
+    data = _yaml_r()
+    bujo = bujo.title()
+
+    # Check if board has been passed instead
+    try:
+        if data[bujo.upper()]:  # If the bujo specified is actually a board
+            _error("'{}' is a board not a bujo!".format(bujo.title()))
+            _info("Valid bujo's in {}:".format(bujo.title()))
+
+            for index, item in enumerate(data[bujo.upper()], start=1):
+                _print("{} {}".format(str(index), item.title()))
+            _info("You can remove a whole board or bujo using...")
+
+    except KeyError:
+        occurrence_of_bujo = get_occurrence_of_key(data, bujo.upper())
+
+        # Check if bujo exists
+        if occurrence_of_bujo == 0:
+            _error("Bujo '{}' does not exist or is empty".format(bujo))
+            exit()
+        elif occurrence_of_bujo == 1:
+            values = nested_lookup(bujo.upper(), data)
+            if arg_is_int(note):
+                if values[0][int(note)]:
+                    print("a note exists at index {}".format(str(note)))
+            else:
+                for index, item in enumerate(values[0]):
+                    # If item is none delete it, if note is 'in' the list then remove it, else no note like note
+                    if item is None:
+                        values[0].pop(index)
+                    elif note in item:
+                        values[0].pop(index)
+                        break
+                else:
+                    _error("No note like '{}' in '{}'".format(note, bujo))
+                    exit()
+
+                parent_key = getpath(data, values[0])[0]
+                nested_update([data], bujo.upper(), values)
+                _yaml_w(data)
+        elif occurrence_of_bujo > 1:
+            print("more than one")
+
+
 def getpath(nested_dict, value, prepath=()):
     for k, v in nested_dict.items():
         path = prepath + (k,)
@@ -119,6 +169,18 @@ def getpath(nested_dict, value, prepath=()):
             p = getpath(v, value, path) # recursive call
             if p is not None:
                 return p
+
+
+def _note_is_in_bujo(note, bujo):
+    return [s for s in bujo if note in bujo]
+
+
+def arg_is_int(n):
+    try:
+        num = int(n)
+        return True
+    except ValueError:
+        return False
 
 
 def ordinal(n):
@@ -137,7 +199,7 @@ def _print(print_message):
     return click.echo(click.style(print_message, fg='magenta'))
 
 
-def _title(title_message):
+def _info(title_message):
     return click.echo(click.style(title_message, fg='yellow'))
 
 
