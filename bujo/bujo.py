@@ -20,6 +20,8 @@ def cli(ctx):
         show_bujos()
 
 
+# TODO - Make boards editable
+# TODO - Board and bujo colors
 @cli.command()
 @click.argument('board', type=str)
 @click.argument('bujos', type=str, nargs=-1)
@@ -30,7 +32,7 @@ def board(board, bujos):
     try:
         data[board] = {}
         for bujo in bujos:
-            data[board][bujo.title()] = [None]
+            data[board.upper()][bujo.upper()] = [None]
     except (KeyError, TypeError, IndexError):
         _error("Error generating this board")
 
@@ -46,38 +48,66 @@ def board(board, bujos):
 def add(bujo, note):
     """Creates a new note in the specified bujo"""
     to_add = note
-    print(to_add)
     data = _yaml_r() or {}
-    occurrence_of_bujo = get_occurrence_of_key(data, bujo.title())
 
-    # Check if there are duplicates
-    if occurrence_of_bujo > 1:
-        _error("There are multiple bujo's called '{}'\n".format(bujo.title()))
-        bujos = nested_lookup(bujo.title(), data)
+    try:
+        if data[bujo.upper()]:  # If the bujo specified is actually a board
+            _error("'{}' is a board not a bujo!".format(bujo.title()))
+            _title("Valid bujo's in {}:".format(bujo.title()))
+            for index, item in enumerate(data[bujo.upper()], start=1):
+                _print("{} {}".format(str(index), item.title()))
+                # TODO - Edit board from add
+    except KeyError:
+        occurrence_of_bujo = get_occurrence_of_key(data, bujo.upper())
 
-        # Print the duplicates and ask which one is to be added to
-        for index, notes in enumerate(bujos, start=1):
-            _title("{} {}".format(index, bujo.title()))
-            for note in notes:
-                _print("- {}".format(note))
+        # Check if there are duplicates
+        if occurrence_of_bujo > 1:  # If there are multiple bujos with name bujo
+            _error("There are multiple bujo's called '{}'\n".format(bujo.title()))
+            bujos = nested_lookup(bujo.upper(), data)
 
-        choice = input("Which bujo would you like '{}' appended to? [{}] ".format(
-            note, "".join(str(range(1, index, 1)))))
-        if int(choice) > index or int(choice) == 0:
-            _error("There isn't a {} bujo named {}".format(ordinal(int(choice)), bujo))
-            exit()
+            # Print the duplicates and ask which one is to be added to
+            for index, notes in enumerate(bujos, start=1):
+                _title("{} {}".format(index, bujo.title()))
+                for note in notes:
+                    _print("- {}".format(note))
 
-        # Find path of that bujo and add to it
-        bujo_path = getpath(data, bujos[int(choice)-1])  # Keys needed to traverse
-        parent_key = bujo_path[0]  # Top level key
-        bujo_data = nested_lookup(parent_key, data)[0]  # List of notes in desired bujo
-        bujo_data[bujo.title()].append(to_add)  # Add to the list
-        data[parent_key] = bujo_data  # Put the whole board back in
-        _yaml_w(data)  # Write to file
+            choice = input("Which bujo would you like '{}' appended to? [{}] ".format(
+                note, "".join(str(range(1, index, 1)))))
 
-    elif occurrence_of_bujo < 1:
-        _error("There are no bujos called '{}'".format(bujo.title()))
-        _print("You can make it using 'bujo board {}'".format(bujo.title()))
+            if int(choice) > index or int(choice) == 0:
+                _error("There isn't a {} bujo named {}".format(ordinal(int(choice)), bujo.title()))
+                exit()
+
+            # Find path of that bujo and add to it
+            bujo_path = getpath(data, bujos[int(choice)-1])  # Keys needed to traverse
+            parent_key = bujo_path[0]  # Top level key
+            bujo_data = nested_lookup(parent_key, data)[0]  # List of notes in desired bujo
+
+            if to_add in bujo_data[bujo.upper()]:
+                _error("'{}' is already in '{} -> {}'".format(to_add, parent_key.title(), bujo.title()))
+                exit()
+
+            bujo_data[bujo.upper()].append(to_add)  # Add to the list
+            data[parent_key] = bujo_data  # Put the whole board back in
+            _yaml_w(data)  # Write to file
+            _success("Added '{}' to {} -> {}".format(note, parent_key.title(), bujo.title()))
+
+        elif occurrence_of_bujo < 1:  # If there are no bujos named bujo
+            _error("There are no bujos called '{}'".format(bujo.title()))
+            _print("You can make it using 'bujo board {}'".format(bujo.title()))
+
+        elif occurrence_of_bujo == 1:  # If there is only one bujo name bujo
+            values = nested_lookup(bujo.upper(), data)
+            parent_key = getpath(data, values[0])[0]
+
+            if to_add in values[0]:
+                _error("'{}' is already in '{} -> {}'".format(to_add, parent_key.title(), bujo.title()))
+                exit()
+
+            values[0].append(note)
+            nested_update([data], bujo.upper(), values)
+            _yaml_w(data)
+            _success("Added '{}' to '{} -> {}'".format(note, parent_key.title(), bujo.title()))
 
 
 def getpath(nested_dict, value, prepath=()):
