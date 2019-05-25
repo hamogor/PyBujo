@@ -25,12 +25,13 @@ def cli(ctx):
 @cli.command()
 @click.argument('board', type=str)
 @click.argument('bujos', type=str, nargs=-1)
+@pysnooper.snoop()
 def board(board, bujos):
     """Creates a new board with all bujos inside it"""
     data = _yaml_r() or {}
     board = board.title()
     try:
-        data[board] = {}
+        data[board.upper()] = {}
         for bujo in bujos:
             data[board.upper()][bujo.upper()] = [None]
     except (KeyError, TypeError, IndexError):
@@ -111,6 +112,7 @@ def add(bujo, note):
             _success("Added '{}' to '{} -> {}'".format(note, parent_key.title(), bujo.title()))
 
 
+# TODO - Exceptions for rm
 @cli.command()
 @click.argument('bujo', type=str)
 @click.argument('note')
@@ -140,22 +142,34 @@ def rm(bujo, note):
             values = nested_lookup(bujo.upper(), data)
             if arg_is_int(note):
                 if values[0][int(note)]:
-                    print("a note exists at index {}".format(str(note)))
+                    parent_key = getpath(data, values[0])[0]
+                    deleted_value = values[0][int(note) - 1]
+                    del values[0][int(note) -1]
+                    nested_update([data], bujo.upper(), values)
+                    _yaml_w(data)
+                    _success("Removed '{}' from '{} -> {}'".format(deleted_value,
+                                                                   parent_key.title(),
+                                                                   bujo.title()))
             else:
                 for index, item in enumerate(values[0]):
-                    # If item is none delete it, if note is 'in' the list then remove it, else no note like note
                     if item is None:
                         values[0].pop(index)
                     elif note in item:
+                        deleted_value = values[0][index]
                         values[0].pop(index)
                         break
-                else:
-                    _error("No note like '{}' in '{}'".format(note, bujo))
-                    exit()
+                    elif index == len(values[0]):
+                        print(index)
+                        print(len(values[0]))
+                        _error("No note like '{}' in '{}'".format(note, bujo))
+                        exit()
 
                 parent_key = getpath(data, values[0])[0]
                 nested_update([data], bujo.upper(), values)
                 _yaml_w(data)
+                _success("Removed '{}' from '{} -> {}'".format(deleted_value,
+                                                               parent_key.title(),
+                                                               bujo.title()))
         elif occurrence_of_bujo > 1:
             print("more than one")
 
