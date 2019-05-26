@@ -2,6 +2,7 @@ import click
 import getpass
 import os
 import yaml
+import sys
 import pysnooper
 from pprint import pprint as pp
 from nested_lookup import (nested_lookup, nested_update,
@@ -21,11 +22,9 @@ def cli(ctx):
 
 
 # TODO - Make boards editable
-# TODO - Board and bujo colors
 @cli.command()
 @click.argument('board', type=str)
 @click.argument('bujos', type=str, nargs=-1)
-@pysnooper.snoop()
 def board(board, bujos):
     """Creates a new board with all bujos inside it"""
     data = _yaml_r() or {}
@@ -115,12 +114,19 @@ def add(bujo, note):
 # TODO - Exceptions for rm
 @cli.command()
 @click.argument('bujo', type=str)
-@click.argument('note')
-def rm(bujo, note):
+@click.option('note')
+@click.option('-rf', '--recursive', is_flag=True)
+def rm(bujo, note, recursive=False):
     """Deletes a note from a bujo"""
     data = _yaml_r()
     bujo = bujo.title()
 
+    if recursive:
+        for key, value in enumerate(data, start=1):
+            if note.upper() in key:
+                print("Match")
+            else:
+                print("no match")
     # Check if board has been passed instead
     try:
         if data[bujo.upper()]:  # If the bujo specified is actually a board
@@ -223,8 +229,7 @@ def _yaml_r():
             return yaml.safe_load(bujo_file)
     except FileNotFoundError:
         with open(_BUJO_PATH, 'w+'):
-            ...
-        _yaml_r()
+            _yaml_r()
 
 
 def _yaml_w(data):
