@@ -8,4 +8,4 @@
 | fig      |--words -w, --color -c| Prints some cool text                    |
 | ls       |                      | Lists the specified bujo                 |
 | rm       |                      | Removes an item from a bujo via its index|
-
+|board      |*n bujos*            | Creates a board with n bujos inside      |

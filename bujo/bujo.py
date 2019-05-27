@@ -1,12 +1,7 @@
 import click
-import getpass
 import os
 import yaml
-import sys
-import pysnooper
-from pprint import pprint as pp
 from nested_lookup import (nested_lookup, nested_update,
-                           get_all_keys, get_occurrence_of_value,
                            get_occurrence_of_key)
 
 yaml.add_representer(type(None), lambda s, _: s.represent_scalar(
@@ -14,11 +9,12 @@ yaml.add_representer(type(None), lambda s, _: s.represent_scalar(
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), '.bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
+
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
 @click.pass_context
 def cli(ctx):
     if ctx.invoked_subcommand is None:
-        show_bujos()
+    # show_bujos()
 
 
 # TODO - Make boards editable
