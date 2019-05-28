@@ -5,6 +5,7 @@ import yaml
 import sys
 import pysnooper
 from pprint import pprint as pp
+from blessed import Terminal
 from nested_lookup import (nested_lookup, nested_update,
                            get_all_keys, get_occurrence_of_value,
                            get_occurrence_of_key)
@@ -40,6 +41,27 @@ def board(board, bujos):
     _success("Created board: {}".format(board))
     for bujo in bujos:
         _print("- {}".format(bujo.title()))
+
+
+@cli.command()
+@click.argument('bujo_or_board_name', type=str)
+def edit(bujo_or_board_name):
+    """Edits the specified bujo or board"""
+    data = _yaml_r() or {}
+    to_edit = bujo_or_board_name.upper()
+
+    t = Terminal()
+    # Add a bujo to board
+
+    # Remove a bujo from board
+
+    # Rename a bujo or board
+
+    # Add an item to bujo
+
+    # Edit an item in bujo
+
+    # remove an item in bujo
 
 
 # TODO - Remove non types when enumerating lists instead of just skipping them
