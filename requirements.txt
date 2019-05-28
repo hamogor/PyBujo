@@ -3,3 +3,4 @@ PyFiglet
 pyyaml
 colorama
 nested-lookup
+blessed
