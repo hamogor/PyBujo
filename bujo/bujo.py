@@ -48,9 +48,14 @@ def board(board, bujos):
 def edit(bujo_or_board_name):
     """Edits the specified bujo or board"""
     data = _yaml_r() or {}
-    to_edit = bujo_or_board_name.upper()
+    bujo = bujo_or_board_name.upper()
 
     t = Terminal()
+    # Check if bujo or board
+    occurrence_of_bujo = get_occurrence_of_key(data, bujo.upper())
+
+    if occurrence_of_bujo > 1:
+        pp(choose_from_multiple(data, bujo.upper()))
     # Add a bujo to board
 
     # Remove a bujo from board
@@ -75,7 +80,6 @@ def add(bujo, note):
 
     try:
         if data[bujo.upper()]:  # If the bujo specified is actually a board
-            _error("'{}' is a board not a bujo!".format(bujo.title()))
             _info("Valid bujo's in {}:".format(bujo.title()))
             for index, item in enumerate(data[bujo.upper()], start=1):
                 _print("{} {}".format(str(index), item.title()))
@@ -136,7 +140,7 @@ def add(bujo, note):
 # TODO - Exceptions for rm
 @cli.command()
 @click.argument('bujo', type=str)
-@click.option('note')
+@click.argument('note')
 @click.option('-rf', '--recursive', is_flag=True)
 def rm(bujo, note, recursive=False):
     """Deletes a note from a bujo"""
@@ -215,6 +219,35 @@ def getpath(nested_dict, value, prepath=()):
 
 def _note_is_in_bujo(note, bujo):
     return [s for s in bujo if note in bujo]
+
+
+# TODO - Reliable and elegant way of fetching from full path
+def choose_from_multiple(data, bujo):
+    # Add the choices to a list that follows the same index so parent_key and choice match up correctly
+    _error("There are multiple lists called '{}'".format(bujo.title()))
+    bujos = nested_lookup(bujo.upper(), data)
+    for index, notes in enumerate(bujos, start=1):
+        bujo_path = getpath(data, bujos[int(index)-1])  # Keys needed to traverse
+        parent_key = bujo_path[0]  # Top level key
+        if parent_key == bujo.upper():
+            _info("{} {}".format(index, bujo.title()))
+        else:
+            _info("{} {} -> {}".format(index, parent_key, bujo.title()))
+        for note in notes:
+            _print("- {}".format(note))
+
+    choice = input("Which bujo would you like '{}' appended to? [{}] ".format(
+        note, "".join(str(range(1, index, 1)))))
+
+    if int(choice) > index or int(choice) == 0:
+        _error("There isn't a {} bujo named {}".format(ordinal(int(choice)), bujo.title()))
+        exit()
+
+    # Find path of that bujo and add to it
+    bujo_data = nested_lookup(parent_key, data)  # List of notes in desired bujo
+    bujo_real_data = nested_lookup("CLI", data)
+    pp(bujo_real_data)
+    return bujo_data
 
 
 def arg_is_int(n):
