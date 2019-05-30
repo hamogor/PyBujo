@@ -1,266 +1,119 @@
 import click
-import getpass
+import time
+import curses
 import os
 import yaml
-import sys
-import pysnooper
+from curses.textpad import Textbox, rectangle
 from pprint import pprint as pp
-from blessed import Terminal
-from nested_lookup import (nested_lookup, nested_update,
-                           get_all_keys, get_occurrence_of_value,
-                           get_occurrence_of_key)
+from pick import pick
+from pick import Picker
+
+
+"""
+- Actions
+- Display view
+- hjkl bindings
+"""
 
 yaml.add_representer(type(None), lambda s, _: s.represent_scalar(
-                    'tag:yaml.org,2002:null', ''))
+    'tag:yaml.org,2002:null', ''))
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), '.bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
+@click.argument('bujo', type=str, required=False)
 @click.pass_context
-def cli(ctx):
-    if ctx.invoked_subcommand is None:
-        show_bujos()
-
-
-# TODO - Make boards editable
-@cli.command()
-@click.argument('board', type=str)
-@click.argument('bujos', type=str, nargs=-1)
-def board(board, bujos):
-    """Creates a new board with all bujos inside it"""
-    data = _yaml_r() or {}
-    board = board.title()
-    try:
-        data[board.upper()] = {}
-        for bujo in bujos:
-            data[board.upper()][bujo.upper()] = [None]
-    except (KeyError, TypeError, IndexError):
-        _error("Error generating this board")
-
-    _yaml_w(data)
-    _success("Created board: {}".format(board))
-    for bujo in bujos:
-        _print("- {}".format(bujo.title()))
-
-
-@cli.command()
-@click.argument('bujo_or_board_name', type=str)
-def edit(bujo_or_board_name):
-    """Edits the specified bujo or board"""
-    data = _yaml_r() or {}
-    bujo = bujo_or_board_name.upper()
-
-    t = Terminal()
-    # Check if bujo or board
-    occurrence_of_bujo = get_occurrence_of_key(data, bujo.upper())
-
-    if occurrence_of_bujo > 1:
-        pp(choose_from_multiple(data, bujo.upper()))
-    # Add a bujo to board
-
-    # Remove a bujo from board
-
-    # Rename a bujo or board
-
-    # Add an item to bujo
-
-    # Edit an item in bujo
-
-    # remove an item in bujo
-
-
-# TODO - Remove non types when enumerating lists instead of just skipping them
-@cli.command()
-@click.argument('bujo', type=str)
-@click.argument('note', type=str, nargs=1)
-def add(bujo, note):
-    """Creates a new note in the specified bujo"""
-    to_add = note
-    data = _yaml_r() or {}
-
-    try:
-        if data[bujo.upper()]:  # If the bujo specified is actually a board
-            _info("Valid bujo's in {}:".format(bujo.title()))
-            for index, item in enumerate(data[bujo.upper()], start=1):
-                _print("{} {}".format(str(index), item.title()))
-                # TODO - Edit board from add
-    except KeyError:
-        occurrence_of_bujo = get_occurrence_of_key(data, bujo.upper())
-
-        # Check if there are duplicates
-        if occurrence_of_bujo > 1:  # If there are multiple bujos with name bujo
-            _error("There are multiple bujo's called '{}'\n".format(bujo.title()))
-            bujos = nested_lookup(bujo.upper(), data)
-
-            # Print the duplicates and ask which one is to be added to
-            for index, notes in enumerate(bujos, start=1):
-                _info("{} {}".format(index, bujo.title()))
-                for note in notes:
-                    _print("- {}".format(note))
-
-            choice = input("Which bujo would you like '{}' appended to? [{}] ".format(
-                note, "".join(str(range(1, index, 1)))))
-
-            if int(choice) > index or int(choice) == 0:
-                _error("There isn't a {} bujo named {}".format(ordinal(int(choice)), bujo.title()))
-                exit()
-
-            # Find path of that bujo and add to it
-            bujo_path = getpath(data, bujos[int(choice)-1])  # Keys needed to traverse
-            parent_key = bujo_path[0]  # Top level key
-            bujo_data = nested_lookup(parent_key, data)[0]  # List of notes in desired bujo
-
-            if to_add in bujo_data[bujo.upper()]:
-                _error("'{}' is already in '{} -> {}'".format(to_add, parent_key.title(), bujo.title()))
-                exit()
-
-            bujo_data[bujo.upper()].append(to_add)  # Add to the list
-            data[parent_key] = bujo_data  # Put the whole board back in
-            _yaml_w(data)  # Write to file
-            _success("Added '{}' to {} -> {}".format(note, parent_key.title(), bujo.title()))
-
-        elif occurrence_of_bujo < 1:  # If there are no bujos named bujo
-            _error("There are no bujos called '{}'".format(bujo.title()))
-            _print("You can make it using 'bujo board {}'".format(bujo.title()))
-
-        elif occurrence_of_bujo == 1:  # If there is only one bujo name bujo
-            values = nested_lookup(bujo.upper(), data)
-            parent_key = getpath(data, values[0])[0]
-
-            if to_add in values[0]:
-                _error("'{}' is already in '{} -> {}'".format(to_add, parent_key.title(), bujo.title()))
-                exit()
-
-            values[0].append(note)
-            nested_update([data], bujo.upper(), values)
-            _yaml_w(data)
-            _success("Added '{}' to '{} -> {}'".format(note, parent_key.title(), bujo.title()))
-
-
-# TODO - Exceptions for rm
-@cli.command()
-@click.argument('bujo', type=str)
-@click.argument('note')
-@click.option('-rf', '--recursive', is_flag=True)
-def rm(bujo, note, recursive=False):
-    """Deletes a note from a bujo"""
-    data = _yaml_r()
-    bujo = bujo.title()
-
-    if recursive:
-        for key, value in enumerate(data, start=1):
-            if note.upper() in key:
-                print("Match")
-            else:
-                print("no match")
-    # Check if board has been passed instead
-    try:
-        if data[bujo.upper()]:  # If the bujo specified is actually a board
-            _error("'{}' is a board not a bujo!".format(bujo.title()))
-            _info("Valid bujo's in {}:".format(bujo.title()))
-
-            for index, item in enumerate(data[bujo.upper()], start=1):
-                _print("{} {}".format(str(index), item.title()))
-            _info("You can remove a whole board or bujo using...")
-
-    except KeyError:
-        occurrence_of_bujo = get_occurrence_of_key(data, bujo.upper())
-
-        # Check if bujo exists
-        if occurrence_of_bujo == 0:
-            _error("Bujo '{}' does not exist or is empty".format(bujo))
-            exit()
-        elif occurrence_of_bujo == 1:
-            values = nested_lookup(bujo.upper(), data)
-            if arg_is_int(note):
-                if values[0][int(note)]:
-                    parent_key = getpath(data, values[0])[0]
-                    deleted_value = values[0][int(note) - 1]
-                    del values[0][int(note) -1]
-                    nested_update([data], bujo.upper(), values)
-                    _yaml_w(data)
-                    _success("Removed '{}' from '{} -> {}'".format(deleted_value,
-                                                                   parent_key.title(),
-                                                                   bujo.title()))
-            else:
-                for index, item in enumerate(values[0]):
-                    if item is None:
-                        values[0].pop(index)
-                    elif note in item:
-                        deleted_value = values[0][index]
-                        values[0].pop(index)
-                        break
-                    elif index == len(values[0]):
-                        print(index)
-                        print(len(values[0]))
-                        _error("No note like '{}' in '{}'".format(note, bujo))
-                        exit()
-
-                parent_key = getpath(data, values[0])[0]
-                nested_update([data], bujo.upper(), values)
-                _yaml_w(data)
-                _success("Removed '{}' from '{} -> {}'".format(deleted_value,
-                                                               parent_key.title(),
-                                                               bujo.title()))
-        elif occurrence_of_bujo > 1:
-            print("more than one")
-
-
-def getpath(nested_dict, value, prepath=()):
-    for k, v in nested_dict.items():
-        path = prepath + (k,)
-        if v == value: # found value
-            return path
-        elif hasattr(v, 'items'): # v is a dict
-            p = getpath(v, value, path) # recursive call
-            if p is not None:
-                return p
-
-
-def _note_is_in_bujo(note, bujo):
-    return [s for s in bujo if note in bujo]
-
-
-# TODO - Reliable and elegant way of fetching from full path
-def choose_from_multiple(data, bujo):
-    # Add the choices to a list that follows the same index so parent_key and choice match up correctly
-    _error("There are multiple lists called '{}'".format(bujo.title()))
-    bujos = nested_lookup(bujo.upper(), data)
-    for index, notes in enumerate(bujos, start=1):
-        bujo_path = getpath(data, bujos[int(index)-1])  # Keys needed to traverse
-        parent_key = bujo_path[0]  # Top level key
-        if parent_key == bujo.upper():
-            _info("{} {}".format(index, bujo.title()))
-        else:
-            _info("{} {} -> {}".format(index, parent_key, bujo.title()))
-        for note in notes:
-            _print("- {}".format(note))
-
-    choice = input("Which bujo would you like '{}' appended to? [{}] ".format(
-        note, "".join(str(range(1, index, 1)))))
-
-    if int(choice) > index or int(choice) == 0:
-        _error("There isn't a {} bujo named {}".format(ordinal(int(choice)), bujo.title()))
+def cli(ctx, bujo=None):
+    if bujo:
+        action_menu(bujo)
         exit()
+    elif ctx.invoked_subcommand is None:
+        select_menu(bujo)
 
-    # Find path of that bujo and add to it
-    bujo_data = nested_lookup(parent_key, data)  # List of notes in desired bujo
-    bujo_real_data = nested_lookup("CLI", data)
-    pp(bujo_real_data)
-    return bujo_data
+def action_menu(bujo):
+    data = _yaml_r() or {}
+
+    title = "Bujo: {}\n\n(a)dd, (r)emove, (e)dit, (c)opy, (q)uit, (h)elp, (b)ack".format(bujo.upper())
+    options = data[bujo.upper()]
+
+    picker = Picker(options, title)
+
+    picker.register_custom_handler(ord('q'), _quit)
+    picker.register_custom_handler(ord('a'), _add)
+    picker.register_custom_handler(ord('r'), _remove)
+    picker.register_custom_handler(ord('e'), _edit)
+    picker.register_custom_handler(ord('c'), _copy)
+    picker.register_custom_handler(ord('q'), _quit)
+    picker.register_custom_handler(ord('h'), _help)
+
+    option, index = picker.start()
+    #print(dir(picker))
+    #print(picker.mark_index)
 
 
-def arg_is_int(n):
-    try:
-        num = int(n)
-        return True
-    except ValueError:
-        return False
+def select_menu(bujo):
+    data = _yaml_r() or {}
+
+    title = "Select a Bujo to work / (a)dd a new one / (q)uit"
+    options = list(data.keys())
+
+    picker = Picker(options, title)
+
+    picker.register_custom_handler(ord('q'), _quit)
+    picker.register_custom_handler(ord('a'), _add_bujo)
+
+    option, index = picker.start()
+    action_menu(option)
+
+
+def add_input(picker):
+    stdscr = curses.initscr()
+    stdscr.addstr(0, 0, "Enter new note: (Ctrl+G) to save")
+    editwin = curses.newwin(5,30, 2,1)
+    rectangle(stdscr, 1,0, 1+5+1, 1+30+1)
+    stdscr.refresh()
+
+    box = Textbox(editwin)
+    box.edit()
+    message = box.gather()
+
+    data = _yaml_r() or {}
+    # Add here
+
+def _back(picker):
+    pass
+
+def _add(picker):
+    data = _yaml_r() or {}
+    picker.title, picker.options = "", ""
+    picker.draw()
+    add_input(picker)
+
+    pass
+
+def _add_bujo(picker):
+    pass
+
+def _remove(picker):
+    pass
+
+def _edit(picker):
+    pass
+
+def _copy(picker):
+    pass
+
+def _quit(picker):
+    return (None, -1)
+
+def _help(picker):
+    pass
 
 
 def ordinal(n):
     return "%d%s" % (
         n, "tsnrhtdd" [(n // 10 % 10 != 1) * (n % 10 < 4) * n % 10::4])
+
 
 def _error(error_message):
     return click.echo(click.style(error_message, fg='red'))
