@@ -33,6 +33,7 @@ def cli(ctx, bujo=None):
     elif ctx.invoked_subcommand is None:
         select_menu()
 
+
 def action_menu(bujo):
     data = _yaml_r() or {}
 
@@ -45,7 +46,8 @@ def action_menu(bujo):
     try:
         picker = Picker(options, title)
     except ValueError:
-        _error("No notes in that Bujo!")
+        # Add first note to this bujo
+        pass
 
     # Set commands
     if picker:
@@ -81,10 +83,10 @@ def select_menu():
     action_menu(option)
 
 
-def take_input(picker, text=""):
+def take_input(picker, text="", title=""):
     # Input screen setup
     stdscr = curses.initscr()
-    stdscr.addstr(0, 0, "Enter new note: (Ctrl+G) to save")
+    stdscr.addstr(0, 0, title)
     editwin = curses.newwin(5,30, 2,1)
     editwin.addstr(text)
     rectangle(stdscr, 1,0, 1+5+1, 1+30+1)
@@ -109,7 +111,7 @@ def _add(picker):
     picker.draw()
 
     # Get note to add
-    message = take_input(picker)
+    message = take_input(picker, title="Enter new note: (Ctrl+G) to save")
 
     # Redraw pick screen
     old_options.append(message)
@@ -131,7 +133,19 @@ def _add(picker):
     _yaml_w(data)
 
 def _add_bujo(picker):
-    pass
+    old_title, old_options = picker.title, picker.options
+    picker.title, picker.options = "", ""
+    picker.draw()
+
+    bujo = take_input(picker, title="Enter name of new bujo (Ctrl+G) to save")
+
+    old_options.append(bujo.upper())
+    picker.title, picker.options = old_title, old_options
+    picker.draw()
+
+    data = _yaml_r() or {}
+    data[bujo.upper()] = []
+    _yaml_w(data)
 
 def _remove(picker):
     data = _yaml_r() or {}
@@ -170,7 +184,7 @@ def _edit(picker):
     bujo_values = data[bujo]
     note = bujo_values[picker.index]
 
-    edited = take_input(picker, text=note)
+    edited = take_input(picker, text=note, title="Edit your note (Ctrl+G) to save")
 
     old_options[picker.index] = edited
     picker.title, picker.options = old_title, old_options
