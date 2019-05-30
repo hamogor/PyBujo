@@ -37,7 +37,7 @@ def action_menu(bujo):
     data = _yaml_r() or {}
 
     # Set title 
-    title = "Bujo: [{}]\n\n(a)dd, (r)emove, (e)dit, (c)opy, (q)uit, (h)elp, (b)ack".format(bujo.upper())
+    title = "Bujo: [{}]\n\n(a)dd, (r)emove, (e)dit, (q)uit, (h)elp, (b)ack".format(bujo.upper())
     options = data[bujo.upper()]
 
     picker = ""
@@ -53,7 +53,6 @@ def action_menu(bujo):
         picker.register_custom_handler(ord('a'), _add)
         picker.register_custom_handler(ord('r'), _remove)
         picker.register_custom_handler(ord('e'), _edit)
-        picker.register_custom_handler(ord('c'), _copy)
         picker.register_custom_handler(ord('q'), _quit)
         picker.register_custom_handler(ord('h'), _help)
         picker.register_custom_handler(ord('b'), _back)
@@ -66,7 +65,7 @@ def select_menu():
     data = _yaml_r() or {}
 
     # Set title and bujo's as options
-    title = "Select a Bujo to work / (a)dd a new one / (q)uit"
+    title = "Select a Bujo to work / (a)dd a new one / (q)uit / (h)elp"
     options = list(data.keys())
 
     # Create picker 
@@ -75,6 +74,7 @@ def select_menu():
     # Register commands for screen
     picker.register_custom_handler(ord('q'), _quit)
     picker.register_custom_handler(ord('a'), _add_bujo)
+    picker.register_custom_handler(ord('h'), _help)
 
     # Start and head to action menu with choice
     option, index = picker.start()
@@ -172,20 +172,25 @@ def _edit(picker):
 
     edited = take_input(picker, text=note)
 
+    old_options[picker.index] = edited
+    picker.title, picker.options = old_title, old_options
+    picker.draw()
+
     bujo_values[picker.index] = edited
 
     data[bujo] = bujo_values
     _yaml_w(data)
 
 
-def _copy(picker):
-    pass
-
 def _quit(picker):
     return exit()
 
 def _help(picker):
-    pass
+    if "Documentation" in picker.title:
+        pass
+    else:
+        picker.title += "\n\n Documentation can be found at:"
+        picker.draw()
 
 def ordinal(n):
     return "%d%s" % (
