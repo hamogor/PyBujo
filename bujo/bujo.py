@@ -41,13 +41,8 @@ def action_menu(bujo):
     title = "Bujo: [{}]\n\n(a)dd, (r)emove, (e)dit, (q)uit, (h)elp, (b)ack".format(bujo.upper())
     options = data[bujo.upper()]
 
-    picker = ""
     # Create new picker
-    try:
-        picker = Picker(options, title)
-    except ValueError:
-        # Add first note to this bujo
-        pass
+    picker = Picker(options, title)
 
     # Set commands
     if picker:
@@ -61,7 +56,6 @@ def action_menu(bujo):
 
         # Start
         option, index = picker.start()
-
 
 def select_menu():
     data = _yaml_r() or {}
@@ -97,7 +91,8 @@ def take_input(picker, text="", title=""):
     box.edit()
 
     # Return the note
-    return box.gather()
+    text = box.gather()
+    return str(text).strip()
 
 
 def _back(picker):
@@ -144,7 +139,7 @@ def _add_bujo(picker):
     picker.draw()
 
     data = _yaml_r() or {}
-    data[bujo.upper()] = []
+    data[bujo.upper()] = ["Default note, you can delete me by hovering and hitting (r)!"]
     _yaml_w(data)
 
 def _remove(picker):
