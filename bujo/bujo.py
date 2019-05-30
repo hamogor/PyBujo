@@ -81,11 +81,12 @@ def select_menu():
     action_menu(option)
 
 
-def add_input(picker):
+def take_input(picker, text=""):
     # Input screen setup
     stdscr = curses.initscr()
     stdscr.addstr(0, 0, "Enter new note: (Ctrl+G) to save")
     editwin = curses.newwin(5,30, 2,1)
+    editwin.addstr(text)
     rectangle(stdscr, 1,0, 1+5+1, 1+30+1)
     stdscr.refresh()
 
@@ -108,7 +109,7 @@ def _add(picker):
     picker.draw()
 
     # Get note to add
-    message = add_input(picker)
+    message = take_input(picker)
 
     # Redraw pick screen
     old_options.append(message)
@@ -157,13 +158,31 @@ def _remove(picker):
     _yaml_w(data)
 
 def _edit(picker):
-    pass
+    title_match = re.search(r"\[(.*)\]", picker.title)
+    bujo = title_match.group(1)
+
+    old_title, old_options = picker.title, picker.options
+    picker.title, picker.options = "", ""
+    picker.draw()
+
+    data = _yaml_r() or {}
+
+    bujo_values = data[bujo]
+    note = bujo_values[picker.index]
+
+    edited = take_input(picker, text=note)
+
+    bujo_values[picker.index] = edited
+
+    data[bujo] = bujo_values
+    _yaml_w(data)
+
 
 def _copy(picker):
     pass
 
 def _quit(picker):
-    return (None, -1)
+    return exit()
 
 def _help(picker):
     pass
