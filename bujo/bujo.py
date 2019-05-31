@@ -80,14 +80,17 @@ def _yaml_w(data):
         yaml.dump(data, bujo_file, indent=4, default_flow_style=False)
 
 
-# TODO - Convert box.gather() text to single line literal
 def take_input(picker, text="", title=""):
+
+    rows, columns = os.popen('stty size', 'r').read().split()
+    rows = int(rows)
+    columns = int(columns)
 
     # Input screen setup
     stdscr = curses.initscr()
     stdscr.addstr(0, 0, title)
-    editwin = curses.newwin(5,30,2,1)
-    rectangle(stdscr, 1,0, 1+5+1, 1+30+1)
+    editwin = curses.newwin(1,columns-2,2,1)
+    rectangle(stdscr, 1,0, 1+1+1, 1+columns-2)
     editwin.addstr(text)
     stdscr.refresh()
 
@@ -98,6 +101,7 @@ def take_input(picker, text="", title=""):
 
     # Return the note
     text = box.gather()
+    text = "".join([s for s in text.splitlines(True) if s.strip("\r\n")])
     return str(text).strip()
 
 def _quit(picker):
