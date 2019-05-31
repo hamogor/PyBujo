@@ -4,23 +4,26 @@
 
  PyBujo uses pick and curses to provide a barebones interactive way of creating, managing and visualizing notes
 
-|Command Line        |                                 |
-|Command             | Output                          | 
-|bujo                | Opens Select Menu               |
-|bujo *name of bujo* | Opens Action Menu for that bujo |
+| Command Line        |                                 |
+|---------------------|---------------------------------|
+| Command             | Output                          |
+| bujo *name of bujo* | Opens Action Menu for that bujo |
+| bujo                | Opens Select Bujo Menu          |
 
-|Select Menu       |                          |
-| Key | Output                                |
-|a    |Adds a new bujo                        |
-|r    |Removes a bujo and all notes inside it |
-|q    |Quit this menu                         |
-|h    |Provides a link to this documentation  |
+| Select Menu |                                       |
+|-------------|---------------------------------------|
+| Key         | Output                                |
+| a           | Adds a new Bujo                       |
+| r           | Remove a bujo and all it's notes      |
+| q           | Quits this menu                       |
+| h           | Displays a link to this documentation |
 
-|Action Menu        |                         |
-| Key | Output                                |
-|a    | Adds a new note                       |
-|r    | Remove the selected note              |
-|e    | Edits the selected note               |
-|q    | Quit this menu                        |
-|h    | Provides a link to this documentation |
-|b    | Back to select menu                   |
+| Action Menu |                                       |
+|-------------|---------------------------------------|
+| Key         | Output                                |
+| a           | Adds a new note                       |
+| r           | Removes the note                      |
+| e           | Edits the selected note               |
+| q           | Quits this menu                       |
+| h           | Displays a link to this documentation |
+| b           | Back to select menu                   |
