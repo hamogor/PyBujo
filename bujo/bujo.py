@@ -6,7 +6,8 @@ import yaml
 from curses.textpad import Textbox, rectangle
 import curses
 from pprint import pprint as pp
-from pick import pick, Picker
+from pick import pick
+from pick import Picker
 from nested_lookup import (nested_lookup, nested_update,
                            get_all_keys, get_occurrence_of_value,
                            get_occurrence_of_key)
