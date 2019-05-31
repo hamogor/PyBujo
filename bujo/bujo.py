@@ -45,10 +45,12 @@ def action_menu(bujo):
     picker.register_custom_handler(ord('q'), _quit)
     picker.register_custom_handler(ord('h'), _help)
     picker.register_custom_handler(ord('b'), _back)
+    picker.register_custom_handler(ord('m'), _move)
 
     option, index = picker.start()
 
 
+# TODO - Take user to take_input if bujo has no notes
 def select_bujo():
     data = _yaml_r() or {}
 
@@ -57,14 +59,21 @@ def select_bujo():
 
     if len(options) >= 1:
         picker = Picker(options, title)
-        picker.register_custom_handler(ord('q'), _quit)
-        picker.register_custom_handler(ord('a'), _add_bujo)
-        picker.register_custom_handler(ord('r'), _remove_bujo)
-        picker.register_custom_handler(ord('h'), _help)
+    else:
+        options = ["MY FIRST BUJO"]
+        data = _yaml_r() or {}
+        data["MY FIRST BUJO"]= [""]
+        _yaml_w(data)
+        picker = Picker(options, title)
 
-        option, index = picker.start()
-        action_menu(option)
+    picker.register_custom_handler(ord('q'), _quit)
+    picker.register_custom_handler(ord('a'), _add_bujo)
+    picker.register_custom_handler(ord('r'), _remove_bujo)
+    picker.register_custom_handler(ord('e'), _edit_bujo)
+    picker.register_custom_handler(ord('h'), _help)
 
+    option, index = picker.start()
+    action_menu(option)
 
 def _yaml_r():
     try:
@@ -108,11 +117,23 @@ def _quit(picker):
     return exit()
 
 
+def _edit_bujo(picker):
+    pass
+
+
+def _move(picker):
+    pass
+
+
 def _add(picker):
     bujo = _get_bujo(picker)
     o_title, o_options = _hide_picker(picker)
 
-    message = take_input(picker, title="Enter new note: (Ctrl+G) to save")
+    message = take_input(picker, title="Enter new note: (Ctrl+G / ENTER) to save, leave empty to exit")
+
+    if message is "":
+        action_menu(bujo)
+        return
 
     o_options.append(message)
     _show_picker(picker, o_title, o_options)
@@ -127,7 +148,10 @@ def _add(picker):
 
 def _add_bujo(picker):
     o_title, o_options = _hide_picker(picker)
-    message = take_input(picker, title="Enter new Bujo name: (Ctrl+G) to save")
+    message = take_input(picker, title="Enter new Bujo name: (Ctrl+G / ENTER) to save, leave empty to exit")
+    if message is "":
+        select_bujo()
+        return
 
     o_options.append(message.upper())
     _show_picker(picker, o_title, o_options)
@@ -148,7 +172,7 @@ def _remove(picker):
         if len(picker.options) < 1:
             _back(picker)
     except IndexError:
-        _back(picker)
+        _quit()
     data[bujo] = bujo_values
 
     picker.move_up()
