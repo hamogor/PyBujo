@@ -80,17 +80,20 @@ def _yaml_w(data):
         yaml.dump(data, bujo_file, indent=4, default_flow_style=False)
 
 
+# TODO - Convert box.gather() text to single line literal
 def take_input(picker, text="", title=""):
+
     # Input screen setup
     stdscr = curses.initscr()
     stdscr.addstr(0, 0, title)
-    editwin = curses.newwin(5,30, 2,1)
-    editwin.addstr(text)
+    editwin = curses.newwin(5,30,2,1)
     rectangle(stdscr, 1,0, 1+5+1, 1+30+1)
+    editwin.addstr(text)
     stdscr.refresh()
 
     # Get the note
     box = Textbox(editwin)
+    box.stripspaces = True
     box.edit()
 
     # Return the note
