@@ -1,22 +1,15 @@
 import click
 import re
 import time
-import curses
 import os
 import yaml
 from curses.textpad import Textbox, rectangle
+import curses
 from pprint import pprint as pp
-from pick import pick
-from pick import Picker
+from pick import pick, Picker
 from nested_lookup import (nested_lookup, nested_update,
                            get_all_keys, get_occurrence_of_value,
                            get_occurrence_of_key)
-
-
-"""
-- Actions
-- Display view
-"""
 
 yaml.add_representer(type(None), lambda s, _: s.represent_scalar(
     'tag:yaml.org,2002:null', ''))
@@ -31,50 +24,60 @@ def cli(ctx, bujo=None):
         action_menu(bujo)
         exit()
     elif ctx.invoked_subcommand is None:
-        select_menu()
+        select_bujo()
 
 
 def action_menu(bujo):
     data = _yaml_r() or {}
 
-    # Set title 
     title = "Bujo: [{}]\n\n(a)dd, (r)emove, (e)dit, (q)uit, (h)elp, (b)ack".format(bujo.upper())
     options = data[bujo.upper()]
 
-    # Create new picker
-    picker = Picker(options, title)
+    if options and len(options) >= 1:
+        picker = Picker(options, title)
+    else:
+        picker = Picker([""], title)
 
-    # Set commands
-    if picker:
-        picker.register_custom_handler(ord('q'), _quit)
-        picker.register_custom_handler(ord('a'), _add)
-        picker.register_custom_handler(ord('r'), _remove)
-        picker.register_custom_handler(ord('e'), _edit)
-        picker.register_custom_handler(ord('q'), _quit)
-        picker.register_custom_handler(ord('h'), _help)
-        picker.register_custom_handler(ord('b'), _back)
+    picker.register_custom_handler(ord('q'), _quit)
+    picker.register_custom_handler(ord('a'), _add)
+    picker.register_custom_handler(ord('r'), _remove)
+    picker.register_custom_handler(ord('e'), _edit)
+    picker.register_custom_handler(ord('q'), _quit)
+    picker.register_custom_handler(ord('h'), _help)
+    picker.register_custom_handler(ord('b'), _back)
 
-        # Start
-        option, index = picker.start()
+    option, index = picker.start()
 
-def select_menu():
+
+def select_bujo():
     data = _yaml_r() or {}
 
-    # Set title and bujo's as options
-    title = "Select a Bujo to work / (a)dd a new one / (q)uit / (h)elp"
+    title = "Select Bujo: / (a)dd a new one / (r)emove bujo and it's notes / (q)uit / (h)elp"
     options = list(data.keys())
 
-    # Create picker 
-    picker = Picker(options, title)
+    if len(options) >= 1:
+        picker = Picker(options, title)
+        picker.register_custom_handler(ord('q'), _quit)
+        picker.register_custom_handler(ord('a'), _add_bujo)
+        picker.register_custom_handler(ord('r'), _remove_bujo)
+        picker.register_custom_handler(ord('h'), _help)
 
-    # Register commands for screen
-    picker.register_custom_handler(ord('q'), _quit)
-    picker.register_custom_handler(ord('a'), _add_bujo)
-    picker.register_custom_handler(ord('h'), _help)
+        option, index = picker.start()
+        action_menu(option)
 
-    # Start and head to action menu with choice
-    option, index = picker.start()
-    action_menu(option)
+
+def _yaml_r():
+    try:
+        with open(_BUJO_PATH, 'r') as bujo_file:
+            return yaml.safe_load(bujo_file)
+    except FileNotFoundError:
+        with open(_BUJO_PATH, 'w+'):
+            _yaml_r()
+
+
+def _yaml_w(data):
+    with open(_BUJO_PATH, 'w') as bujo_file:
+        yaml.dump(data, bujo_file, indent=4, default_flow_style=False)
 
 
 def take_input(picker, text="", title=""):
@@ -94,86 +97,81 @@ def take_input(picker, text="", title=""):
     text = box.gather()
     return str(text).strip()
 
+def _quit(picker):
+    return exit()
 
-def _back(picker):
-    select_menu()
-    pass
 
 def _add(picker):
-    # Clear pick screen
-    old_title, old_options = picker.title, picker.options
-    picker.title, picker.options = "", ""
-    picker.draw()
+    bujo = _get_bujo(picker)
+    o_title, o_options = _hide_picker(picker)
 
-    # Get note to add
     message = take_input(picker, title="Enter new note: (Ctrl+G) to save")
 
-    # Redraw pick screen
-    old_options.append(message)
-    picker.title, picker.options = old_title, old_options
-    picker.draw()
+    o_options.append(message)
+    _show_picker(picker, o_title, o_options)
 
-    # Fetch the bujo title
-    title_match = re.search(r"\[(.*)\]", picker.title)
-    bujo = title_match.group(1)
-
-    # Add to _BUJO_PATH
     data = _yaml_r() or {}
     bujo_values = data[bujo]
     bujo_values.append(message)
     data[bujo] = bujo_values
 
-
-    # Write to _BUJO_PATH
     _yaml_w(data)
+
 
 def _add_bujo(picker):
-    old_title, old_options = picker.title, picker.options
-    picker.title, picker.options = "", ""
-    picker.draw()
+    o_title, o_options = _hide_picker(picker)
+    message = take_input(picker, title="Enter new Bujo name: (Ctrl+G) to save")
 
-    bujo = take_input(picker, title="Enter name of new bujo (Ctrl+G) to save")
-
-    old_options.append(bujo.upper())
-    picker.title, picker.options = old_title, old_options
-    picker.draw()
+    o_options.append(message.upper())
+    _show_picker(picker, o_title, o_options)
 
     data = _yaml_r() or {}
-    data[bujo.upper()] = ["Default note, you can delete me by hovering and hitting (r)!"]
+    data[message.upper()] = [""]
     _yaml_w(data)
 
+
 def _remove(picker):
+    bujo = _get_bujo(picker)
+
     data = _yaml_r() or {}
-
-    # Get bujo
-    title_match = re.search(r"\[(.*)\]", picker.title)
-    bujo = title_match.group(1)
-
-    # Remove value at index
     bujo_values = data[bujo]
     try:
         bujo_values.pop(picker.index)
         picker.options.pop(picker.index)
         if len(picker.options) < 1:
-            exit()
+            _back(picker)
     except IndexError:
-        _error("No more notes in that bujo")
+        _back(picker)
     data[bujo] = bujo_values
 
-    # Redraw picker
     picker.move_up()
     picker.draw()
 
     _yaml_w(data)
 
-def _edit(picker):
-    title_match = re.search(r"\[(.*)\]", picker.title)
-    bujo = title_match.group(1)
 
-    old_title, old_options = picker.title, picker.options
-    picker.title, picker.options = "", ""
+def _remove_bujo(picker):
+    bujo = picker.options[picker.index]
+
+    data = _yaml_r() or {}
+    try:
+        data.pop(bujo, None)
+        picker.options.pop(picker.index)
+        if len(picker.options) < 1:
+            _back(picker)
+    except IndexError:
+        _back(picker)
+
+    picker.move_up()
     picker.draw()
 
+    _yaml_w(data)
+
+
+def _edit(picker):
+    bujo = _get_bujo(picker)
+
+    o_title, o_options = _hide_picker(picker)
     data = _yaml_r() or {}
 
     bujo_values = data[bujo]
@@ -181,59 +179,51 @@ def _edit(picker):
 
     edited = take_input(picker, text=note, title="Edit your note (Ctrl+G) to save")
 
-    old_options[picker.index] = edited
-    picker.title, picker.options = old_title, old_options
-    picker.draw()
+    o_options[picker.index] = edited
+    _show_picker(picker, o_title, o_options)
 
     bujo_values[picker.index] = edited
-
     data[bujo] = bujo_values
     _yaml_w(data)
 
-
-def _quit(picker):
-    return exit()
 
 def _help(picker):
     if "Documentation" in picker.title:
         pass
     else:
-        picker.title += "\n\n Documentation can be found at:"
+        picker.title += "\n\nDocumentation can be found at:"
         picker.draw()
-
-def ordinal(n):
-    return "%d%s" % (
-        n, "tsnrhtdd" [(n // 10 % 10 != 1) * (n % 10 < 4) * n % 10::4])
+    pass
 
 
-def _error(error_message):
-    return click.echo(click.style(error_message, fg='red'))
+def _set_title(picker, title):
+    picker.title = title
+    picker.draw()
 
 
-def _success(success_message):
-    return click.echo(click.style(success_message, fg='green'))
+def _set_options(picker, options):
+    picker.options = options
+    picker.draw()
+
+def _hide_picker(picker):
+    old_title, old_options = picker.title, picker.options
+
+    picker.title, picker.options = "", ""
+    picker.draw()
+    return (old_title, old_options)
+
+def _show_picker(picker, title, options):
+    picker.title, picker.options = title, options
+    picker.draw()
 
 
-def _print(print_message):
-    return click.echo(click.style(print_message, fg='magenta'))
+def _get_bujo(picker):
+    title_match = re.search(r"\[(.*)\]", picker.title)
+    return title_match.group(1)
 
 
-def _info(title_message):
-    return click.echo(click.style(title_message, fg='yellow'))
-
-
-def _yaml_r():
-    try:
-        with open(_BUJO_PATH, 'r') as bujo_file:
-            return yaml.safe_load(bujo_file)
-    except FileNotFoundError:
-        with open(_BUJO_PATH, 'w+'):
-            _yaml_r()
-
-
-def _yaml_w(data):
-    with open(_BUJO_PATH, 'w') as bujo_file:
-        yaml.dump(data, bujo_file, indent=4, default_flow_style=False)
+def _back(picker):
+    select_bujo()
 
 
 if __name__ == '__main__':
