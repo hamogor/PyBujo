@@ -1,5 +1,8 @@
 Click
-PyFiglet
+nested_lookup
+pprint
 pyyaml
 colorama
-nested-lookup
+asciimatics
+pick
+
