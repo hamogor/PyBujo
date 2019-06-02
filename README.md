@@ -11,7 +11,7 @@
 | bujo                | Opens Select Bujo Menu          |
 
 | Select Menu |                                         |
-|-------------|-----------------------------------------  |
+|-------------|-----------------------------------------|
 | Key         | Output                                  |
 | a           | Adds a new Bujo                         |
 | r           | Remove a bujo and all it's notes        |
