@@ -48,7 +48,7 @@ def action_menu(bujo):
 
 
 # TODO - Take user to take_input if bujo has no notes
-def select_bujo():
+def select_bujo(picker=""):
     data = _yaml_r() or {}
 
     title = "Select Bujo: / (a)dd a new one / (r)emove bujo and it's notes / (q)uit / (h)elp"
@@ -131,11 +131,13 @@ def _add(picker):
 
     message = take_input(picker, title="Enter new note: (Ctrl+G / ENTER) to save, leave empty to exit")
 
-    if message is "":
+    if message is "" or message in o_options:
         action_menu(bujo)
         return
 
     o_options.append(message)
+    if o_options[0] is "":
+        del o_options[0]
     _show_picker(picker, o_title, o_options)
 
     data = _yaml_r() or {}
@@ -149,10 +151,9 @@ def _add(picker):
 def _add_bujo(picker):
     o_title, o_options = _hide_picker(picker)
     message = take_input(picker, title="Enter new Bujo name: (Ctrl+G / ENTER) to save, leave empty to exit")
-    if message is "":
+    if message is "" or message.upper() in o_options:
         select_bujo()
         return
-
     o_options.append(message.upper())
     _show_picker(picker, o_title, o_options)
 
