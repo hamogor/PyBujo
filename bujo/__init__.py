@@ -8,7 +8,7 @@
 __version__ = "0.2"
 __author__ = "Harry Morgan <ferovax@gmail.com>"
 __copyright__ = "Copyright (c) 2019 Harry Morgan <ferovax@gmail.com>"
-__all__ = ['EditBox', 'cli']
+__all__ = ['Bujo', 'cli']
 
 import click
 import re
@@ -27,14 +27,39 @@ _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
-@click.argument('bujo', type=str, required=False)
+@click.argument('journal', type=str, required=False)
 @click.pass_context
-def cli(ctx, bujo=None):
-    if bujo:
-        action_menu(bujo)
+def cli(ctx, journal=None):
+    if journal:
+        init_action_menu(journal)
     elif ctx.invoked_subcommand is None:
-        select_bujo()
+        data = _yaml_r() or {}
+        b = Bujo("Select Bujo: (a)dd, (r)emove, (q)uit, (h)elp",
+                 list(data.keys()),
+                 "select")
 
+
+
+def init_action_menu(journal=None):
+    data = _yaml_r() or {}
+    if journal.upper() in data.keys():
+        title = "Bujo [{}]\n\n(a)dd, (r)emove, (e)dit, (q)uit, (h)elp, (b)ack".format(journal.upper())
+        options = data[journal.upper()]
+        type_ = "bujo"
+        action_menu = Bujo(title, options, type_)
+        action_menu.start()
+    else:
+        click.echo(click.style("No bujo named '{}'".format(journal.upper()), fg='red'))
+
+
+def init_select_menu():
+    data = _yaml_r() or {}
+
+    title = "Select Bujo: (a)dd, (e)dit, (r)emove, (q)uit, (h)elp"
+    options = list(data.keys())
+    type_ = "select"
+
+    select_menu = Bujo(title, options, type_)
 
 class EditBox(object):
 
@@ -69,6 +94,50 @@ class EditBox(object):
 
 
 class Bujo(Picker):
+
+
+    def __init__(self, title, options, type_, indicator='>',
+                 default_index=0, multi_select=False, min_selection_count=0,
+                 options_map_func=None):
+
+        if len(options) < 1:
+            self.options = ["MY FIRST BUJO"]
+            data = _yaml_r() or {}
+            data["MY FIRST BUJO"] = [""]
+            _yaml_w(data)
+
+        self.title = title
+        self.options = options
+        self.type_ = type_
+        self.custom_handlers = {}
+        self.indicator = indicator
+        self.default_index = default_index
+        self.multi_select = False
+        self.min_selection_count=0
+        self.options_map_func = None
+        self.index = default_index
+
+
+        self.set_commands(self.type_)
+
+    def set_commands(self, menu_type):
+       if self.type_ is "select":
+           self.register_custom_handler(ord('q'), self.quit)
+           self.register_custom_handler(ord('a'), self.add)
+           self.register_custom_handler(ord('r'), self.remove_bujo)
+           self.register_custom_handler(ord('e'), self.edit_bujo)
+           self.register_custom_handler(ord('h'), self.help_link)
+           return self.start()
+       elif self.type_ is "bujo":
+           self.register_custom_handler(ord('q'), self.quit)
+           self.register_custom_handler(ord('a'), self.add)
+           self.register_custom_handler(ord('r'), self.remove)
+           self.register_custom_handler(ord('e'), self.edit)
+           self.register_custom_handler(ord('q'), self.quit)
+           self.register_custom_handler(ord('h'), self.help_link)
+           self.register_custom_handler(ord('b'), self.back)
+           self.register_custom_handler(ord('m'), self.move)
+           return self.start()
 
 
     def add(self):
@@ -110,41 +179,6 @@ class Bujo(Picker):
 
     def move(self):
         pass
-
-
-    def set_commands(self, menu_type):
-       if self.type_ is "select":
-           self.register_custom_handler(ord('q'), self.quit)
-           self.register_custom_handler(ord('a'), self.add)
-           self.register_custom_handler(ord('r'), self.remove_bujo)
-           self.register_custom_handler(ord('e'), self.edit_bujo)
-           self.register_custom_handler(ord('h'), self.help_link)
-       elif self.type_ is "bujo":
-           self.register_custom_handler(ord('q'), self.quit)
-           self.register_custom_handler(ord('a'), self.add)
-           self.register_custom_handler(ord('r'), self.remove)
-           self.register_custom_handler(ord('e'), self.edit)
-           self.register_custom_handler(ord('q'), self.quit)
-           self.register_custom_handler(ord('h'), self.help_link)
-           self.register_custom_handler(ord('b'), self.back)
-           self.register_custom_handler(ord('m'), self.move)
-
-
-    def __init__(self, title, options, type_):
-        self.title = title
-        self.options = options
-        self.type_ = type_
-        self.custom_handlers = {}
-
-        if len(options) < 1:
-            self.options = ["MY FIRST BUJO"]
-            data = _yaml_r() or {}
-            data["MY FIRST BUJO"] = [""]
-
-        self.set_commands("select")
-
-
-
 
 
 def _yaml_r():

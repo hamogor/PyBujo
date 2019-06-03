@@ -18,7 +18,7 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        bujo= bujo.bujo:cli
+        bujo=bujo:cli
     ''',
     classifiers=(
         'Intended Audience :: Developers',
