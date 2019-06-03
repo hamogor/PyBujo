@@ -200,7 +200,6 @@ def _remove_bujo(picker):
     _yaml_w(data)
 
 
-# TODO - edit not working correctly in windows
 def _edit(picker):
     bujo = _get_bujo(picker)
 
