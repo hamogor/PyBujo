@@ -1,241 +1,76 @@
 import click
-import getpass
+import re
 import os
 import yaml
-import pysnooper
+from curses.textpad import Textbox, rectangle
+import curses
 from pprint import pprint as pp
-from pyfiglet import Figlet
-from nested_lookup import (nested_lookup, nested_update,
-                           get_all_keys, get_occurrence_of_value,
-                           get_occurrence_of_key)
+from pick import Picker
 
-yaml.add_representer(type(None), lambda s, _: s.represent_scalar('tag:yaml.org,2002:null', ''))
-_BUJO_PATH = os.path.join(os.path.expanduser('~'), 'bujo.yaml')
+yaml.add_representer(type(None), lambda s, _: s.represent_scalar(
+    'tag:yaml.org,2002:null', ''))
+_BUJO_PATH = os.path.join(os.path.expanduser('~'), '.bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
-# TODO - Enforce boards
 
-# TODO - Make every command take which bujo to work on as first argument and pass that context
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
+@click.argument('bujo', type=str, required=False)
 @click.pass_context
-def cli(ctx):
-    if ctx.invoked_subcommand is None:
-        show_bujo()
-
-
-# TODO - Sort out indentation
-# TODO - Unnested bujo values being appended and printed as nested value
-def show_bujo():
-    """Displays all bujo's"""
-    data = _yaml_r() or {}
-    bujos = get_all_keys(data)
-    for bujo in bujos:
-        notes = nested_lookup(bujo, [data])
-        if isinstance(notes[0], dict):
-            click.echo(click.style("* {}".format(bujo), fg='yellow'))
-        elif isinstance(notes[0], list):
-            click.echo(click.style(" - {}".format(bujo), fg='magenta'))
-            for index, note in enumerate(notes[0], start=1):
-                if note is None:
-                    continue
-                click.echo(click.style(" {}  {}".format(str(index), note)))
-            click.echo("")
-
-
-@cli.command()
-@click.argument('bujo', type=str)
-@click.argument('note', type=str)
-def add(bujo, note):
-    """
-    Add a note to a bujo, if the bujo doesn't exist it is created instead
-    """
-    keys = []
-    data = _yaml_r() or {}
-    bujo = bujo.title()
-    bujos = get_all_keys(data)
-    pp(data)
-    pp(bujo)
-    print(get_occurrence_of_key(data, bujo))
-    list_ = nested_lookup(bujo, data)
-    print(list_)
-    if get_occurrence_of_key(data, bujo) > 1:
-        error("Multiple bujo's named {}".format(bujo))
-
-# TODO - We're not even checking for a valid bujo here. This needs complete reworking.
-#@cli.command()
-#@click.argument('bujo', type=str)
-#@click.argument('note', type=str)
-#def add(note, bujo=None):
-#    """
-#    Add a note to a bujo, a name must be specified
-#    """
-#    keys = []
-#    data = _yaml_r() or {}
-#    bujo = bujo.title()
-#    bujos = get_all_keys(data)
-#    occurrence_of_bujo = get_occurrence_of_key(data, bujo)
-#
-#    if occurrence_of_bujo > 1 and len(data[bujo]) is 1:  # This check always returns 1, it shouldnt. 
-#        error("ERROR: Multiple bujos called '{}' detected on top level".format(bujo))
-#        error("You'll have to rectify this in {}".format(_BUJO_PATH))
-#        error("")  # Blank Line
-#
-#    elif occurrence_of_bujo > 1:
-#        error("Multiple bujos called '{}' detected".format(bujo))
-#        error("")  # Blank Line
-#        list_ = nested_lookup(bujo, data)
-#        for index, li in enumerate(list_, start=1):
-#            click.echo(click.style("{} {}".format(str(index), bujo), fg='magenta'))
-#            for item in li:
-#                click.echo(click.style("- {}".format(item)))
-#            click.echo("")
-#        choices = ""
-#        chosen_bujo = input(
-#            "Which bujo should '{}' be added to '1/2/..' >> ".format(note))
-#        # Index chosen_bujo against list_ index then check data for a list that matches and nested update
-#        # Go look for a dict with a matching list_[chosen_bujo-1] first in data
-#    elif occurrence_of_bujo is 1:
-#        list_ = nested_lookup(bujo, data)
-#        list_[0].append(note)
-#        nested_update([data], bujo, list_)
-#    _yaml_w(data)
-#    success("Added '{}' to {}".format(note, bujo))
-
-
-# TODO - Check if the top level board already exists and error
-@cli.command()
-@click.argument('board', type=str)
-@click.argument('bujos', type=str, nargs=-1)
-def board(board, bujos):
-    """Creates a new board that has n number of bujos inside it"""
-    data = _yaml_r() or {}
-    board = board.title()
-    data[board] = {}
-    success("Created new board {} with bujos:".format(board))
-    for bujo in bujos:
-        success("- {}".format(bujo.title()))
-        data[board][bujo.title()] = [None]
-    _yaml_w(data)
-
-
-# TODO - Exceptions
-@cli.command()
-@click.argument('bujo', type=str)
-@click.argument('index', type=int)
-def rm(bujo, index):
-    """
-    Deletes a note from a bujo
-    Removes empty bujo's
-    :param bujo: The bujo to delete from
-    :param index: The index of the note
-    :return:
-    """
-    data = _yaml_r()
-    bujo = bujo.title()
-
-    occurrence_of_bujo = get_occurrence_of_key(data, bujo)
-    if occurrence_of_bujo is 0:
-        error("Bujo '{}' does not exist or is empty".format(bujo))
+def cli(ctx, bujo=None):
+    if bujo:
+        action_menu(bujo)
         exit()
-
-    if occurrence_of_bujo > 1:
-        error("ERROR: Multiple bujos called '{}' detected on top level".format(bujo))
-        error("You'll have to rectify this in {}".format(_BUJO_PATH))
-        error("")  # Blank Line
-    else:
-        try:
-            notes = nested_lookup(bujo, data)
-            removed = notes[0][index-1]
-            notes[0].pop(index-1)
-            _yaml_w(data)
-            success("Removed '{}' from {}".format(removed, bujo))
-        except (KeyError, IndexError, TypeError):
-            error("There is no note in '{}' at index {}".format(bujo, index))
+    elif ctx.invoked_subcommand is None:
+        select_bujo()
 
 
-# TODO - Exceptions
-@cli.command()
-@click.argument('bujo', type=str)
-def ls(bujo):
-    """Lists all notes in a specific bujo"""
+def action_menu(bujo):
     data = _yaml_r() or {}
-    bujo = bujo.title()
-    try:
-        notes = nested_lookup(
-            key=bujo,
-            document=data,
-        )
-    except (KeyError, IndexError, TypeError):
-        error("Bujo '{}' does not exist".format(bujo))
 
-    try:
-        click.echo(click.style("- {}".format(bujo), fg='magenta'))
-        for index, note in enumerate(notes[0], start=1):
-            if note is None:
-                continue
-            click.echo(" {}  {}".format(str(index), note))
-    except (IndexError, TypeError):
-        error("Bujo '{}' does not exist or is empty".format(bujo))
+    title = "Bujo: [{}]\n\n(a)dd, (r)emove, (e)dit, (q)uit, (h)elp, (b)ack".format(bujo.upper())
+    options = data[bujo.upper()]
 
-
-# TODO - Make use of this or get rid
-@cli.command()
-@click.option('--words', '-w', help='The custom text to print', metavar='<str>')
-@click.option('--color', '-c', help='The color to print in')
-def fig(words, color='black'):
-    """Prints PyBujo or a cool message"""
-    f = Figlet(font='slant')
-    if words:
-        click.echo(click.style(f.renderText(words), fg=color))
+    if options and len(options) >= 1:
+        picker = Picker(options, title)
     else:
-        click.echo(click.style(f.renderText(getpass.getuser()), fg=color))
+        picker = Picker([""], title)
+
+    picker.register_custom_handler(ord('q'), _quit)
+    picker.register_custom_handler(ord('a'), _add)
+    picker.register_custom_handler(ord('r'), _remove)
+    picker.register_custom_handler(ord('e'), _edit)
+    picker.register_custom_handler(ord('q'), _quit)
+    picker.register_custom_handler(ord('h'), _help)
+    picker.register_custom_handler(ord('b'), _back)
+    picker.register_custom_handler(ord('m'), _move)
+
+    option, index = picker.start()
 
 
-@cli.command()
-@click.argument('from_bujo', type=str)
-@click.argument('to_bujo', type=str)
-@click.argument('index', type=int)
-def mv(from_bujo, to_bujo, index):
-    data = _yaml_r()
-    f_bujo = from_bujo.title()
-    t_bujo = to_bujo.title()
+# TODO - Take user to take_input if bujo has no notes
+def select_bujo(picker=""):
+    data = _yaml_r() or {}
 
-    # nested_lookup returns a nested list
-    try:
-        from_vals = nested_lookup(f_bujo, data)[0]
-    except (KeyError, IndexError, TypeError):
-        error("Bujo '{}' does not exist".format(f_bujo))
-        return
-    try:
-        to_vals = nested_lookup(t_bujo, data)[0]
-    except (KeyError, IndexError, TypeError):
-        error("Bujo '{}' does not exist".format(f_bujo))
-        return
+    title = "Select Bujo: / (a)dd a new one / (r)emove bujo and it's notes / (q)uit / (h)elp"
+    options = list(data.keys())
 
-    if from_vals[index-1] in to_vals:
-        error("Note '{}' already exists in {}!".format(from_vals[index -1], t_bujo))
+    if len(options) >= 1:
+        picker = Picker(options, title)
     else:
-        try:
-            to_vals.append(from_vals[index-1])  # Add our note to our list
-            original_value = from_vals[index-1]
-            del from_vals[index-1]  # Delete from the place we got it
+        options = ["MY FIRST BUJO"]
+        data = _yaml_r() or {}
+        data["MY FIRST BUJO"]= [""]
+        _yaml_w(data)
+        picker = Picker(options, title)
 
-            # update the value of the key to that list
-            nested_update([data], f_bujo, from_vals)
-            nested_update([data], t_bujo, to_vals)
-            success("Moved '{}' from '{}' to '{}'".format(original_value, f_bujo, t_bujo))
-        except KeyError:
-            error("Bujo '{}' does not exist".format(f_bujo))
+    picker.register_custom_handler(ord('q'), _quit)
+    picker.register_custom_handler(ord('a'), _add_bujo)
+    picker.register_custom_handler(ord('r'), _remove_bujo)
+    picker.register_custom_handler(ord('e'), _edit_bujo)
+    picker.register_custom_handler(ord('h'), _help)
 
-    _yaml_w(data)
-
-
-def error(error):
-    return click.echo(click.style(error, fg='red'))
-
-
-def success(success):
-    return click.echo(click.style(success, fg='green'))
+    option, index = picker.start()
+    action_menu(option)
 
 
 def _yaml_r():
@@ -244,8 +79,7 @@ def _yaml_r():
             return yaml.safe_load(bujo_file)
     except FileNotFoundError:
         with open(_BUJO_PATH, 'w+'):
-            ...
-        _yaml_r()
+            _yaml_r()
 
 
 def _yaml_w(data):
@@ -253,7 +87,210 @@ def _yaml_w(data):
         yaml.dump(data, bujo_file, indent=4, default_flow_style=False)
 
 
+class EditBox():
+
+    def __init__(self, win, text="", title=""):
+        self.picker = picker
+        self.text   = text
+        self.title  = tiele
+
+        try:
+            columns, rows = os.get_terminal_size(0)
+        except OSError:
+            columns, rows = os.get_terminal_size(1)
+        columns = int(columns)
+
+        stdscr = curses.initscr()
+        stdscr.addstr(0,0,title)
+        editwin = curses.newwin(1,columns-2,21)
+        rectangle(stdscr, 1,0, 1+1+1, 1+columns-2)
+        editwin.addstr(text)
+        stdscr.refresh()
+
+        box = Textbox(editwin)
+        box.stripspaces = True
+        return win
+
+    def take_input(self, win):
+        win.edit()
+        text = win.gather()
+        text = "".join([s for s in text.splitlines(True) is s.strip("\r\n")])
+        return str(text).strip()
+
+
+    def take_input
+
+def take_input(picker, text="", title=""):
+    try:
+        columns, rows = os.get_terminal_size(0)
+    except OSError:
+        columns, rows = os.get_terminal_size(1)
+    columns = int(columns)
+
+    # Input screen setup
+    stdscr = curses.initscr()
+    stdscr.addstr(0, 0, title)
+    editwin = curses.newwin(1,columns-2,2,1)
+    rectangle(stdscr, 1,0, 1+1+1, 1+columns-2)
+    editwin.addstr(text)
+    stdscr.refresh()
+
+    # Get the note
+    box = Textbox(editwin)
+    box.stripspaces = True
+    box.edit()
+
+    # Return the note
+    text = box.gather()
+    text = "".join([s for s in text.splitlines(True) if s.strip("\r\n")])
+    return str(text).strip()
+
+
+def _quit(picker):
+    return exit()
+
+
+def _edit_bujo(picker):
+    pass
+
+
+def _move(picker):
+    pass
+
+
+def _add(picker):
+    bujo = _get_bujo(picker)
+    o_title, o_options = _hide_picker(picker)
+
+    message = take_input(picker, title="Enter new note: (Ctrl+G / ENTER) to save, leave empty to exit")
+
+    if message is "" or message in o_options:
+        action_menu(bujo)
+        return
+
+    o_options.append(message)
+    if o_options[0] is "":
+        del o_options[0]
+    _show_picker(picker, o_title, o_options)
+
+    data = _yaml_r() or {}
+    bujo_values = data[bujo]
+    bujo_values.append(message)
+    data[bujo] = bujo_values
+
+    _yaml_w(data)
+
+
+def _add_bujo(picker):
+    o_title, o_options = _hide_picker(picker)
+    message = take_input(picker, title="Enter new Bujo name: (Ctrl+G / ENTER) to save, leave empty to exit")
+    if message is "" or message.upper() in o_options:
+        select_bujo()
+        return
+    o_options.append(message.upper())
+    _show_picker(picker, o_title, o_options)
+
+    data = _yaml_r() or {}
+    data[message.upper()] = [""]
+    _yaml_w(data)
+
+
+def _remove(picker):
+    bujo = _get_bujo(picker)
+
+    data = _yaml_r() or {}
+    bujo_values = data[bujo]
+    try:
+        bujo_values.pop(picker.index)
+        picker.options.pop(picker.index)
+        if len(picker.options) < 1:
+            _back(picker)
+    except IndexError:
+        _quit()
+    data[bujo] = bujo_values
+
+    picker.move_up()
+    picker.draw()
+
+    _yaml_w(data)
+
+
+def _remove_bujo(picker):
+    bujo = picker.options[picker.index]
+
+    data = _yaml_r() or {}
+    try:
+        data.pop(bujo, None)
+        picker.options.pop(picker.index)
+        if len(picker.options) < 1:
+            _back(picker)
+    except IndexError:
+        _back(picker)
+
+    picker.move_up()
+    picker.draw()
+
+    _yaml_w(data)
+
+
+def _edit(picker):
+    bujo = _get_bujo(picker)
+
+    o_title, o_options = _hide_picker(picker)
+    data = _yaml_r() or {}
+
+    bujo_values = data[bujo]
+    note = bujo_values[picker.index]
+
+    edited = take_input(picker, text=note, title="Edit your note (Ctrl+G) to save")
+
+    o_options[picker.index] = edited
+    _show_picker(picker, o_title, o_options)
+
+    bujo_values[picker.index] = edited
+    data[bujo] = bujo_values
+    _yaml_w(data)
+
+
+def _help(picker):
+    if "Documentation" in picker.title:
+        pass
+    else:
+        picker.title += "\n\nDocumentation can be found at:"
+        picker.draw()
+    pass
+
+
+def _set_title(picker, title):
+    picker.title = title
+    picker.draw()
+
+
+def _set_options(picker, options):
+    picker.options = options
+    picker.draw()
+
+def _hide_picker(picker):
+    old_title, old_options = picker.title, picker.options
+
+    picker.title, picker.options = "", ""
+    picker.draw()
+    return (old_title, old_options)
+
+def _show_picker(picker, title, options):
+    picker.title, picker.options = title, options
+    picker.draw()
+
+
+def _get_bujo(picker):
+    title_match = re.search(r"\[(.*)\]", picker.title)
+    return title_match.group(1)
+
+
+def _back(picker):
+    select_bujo()
+
+
 if __name__ == '__main__':
     cli = click.CommandCollection(sources=[cli])
     cli()
-
