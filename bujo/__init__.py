@@ -33,11 +33,7 @@ def cli(ctx, journal=None):
     if journal:
         init_action_menu(journal)
     elif ctx.invoked_subcommand is None:
-        data = _yaml_r() or {}
-        b = Bujo("Select Bujo: (a)dd, (r)emove, (q)uit, (h)elp",
-                 list(data.keys()),
-                 "select")
-
+        init_select_menu()
 
 
 def init_action_menu(journal=None):
@@ -55,11 +51,13 @@ def init_action_menu(journal=None):
 def init_select_menu():
     data = _yaml_r() or {}
 
-    title = "Select Bujo: (a)dd, (e)dit, (r)emove, (q)uit, (h)elp"
+    title = "Select Bujo (ENTER): (a)dd, (e)dit, (r)emove, (q)uit, (h)elp"
     options = list(data.keys())
     type_ = "select"
 
     select_menu = Bujo(title, options, type_)
+    selected = select_menu.options[select_menu.index]
+    init_action_menu(selected)
 
 class EditBox(object):
 
@@ -140,44 +138,39 @@ class Bujo(Picker):
            return self.start()
 
 
-    def add(self):
+    def add(self, instance):
         pass
 
 
-    def remove_bujo(self):
+    def remove_bujo(self, instance):
         pass
 
 
-    def edit_bujo(self):
+    def edit_bujo(self, instance):
         pass
 
 
-    def help_link(self):
+    def help_link(self, instance):
         pass
 
 
-    def quit(self):
+    def quit(self, instance):
         return exit()
 
 
-    def add(self):
+    def remove(self, instance):
         pass
 
 
-    def remove(self):
+    def edit(self, instance):
         pass
 
 
-    def edit(self):
-        pass
+    def back(self, instance):
+        init_select_menu()
 
 
-    def back(self):
-        pass
-
-
-
-    def move(self):
+    def move(self, instance):
         pass
 
 
