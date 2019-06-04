@@ -42,7 +42,7 @@ def init_action_menu(journal=None):
         title = "Bujo [{}]\n\n\n(a)dd, (r)emove, (e)dit, (q)uit, (h)elp, (b)ack".format(journal.upper())
         options = data[journal.upper()]
         type_ = "bujo"
-        action_menu = Bujo(title, options, type_, journal.upper())
+        action_menu = Bujo(title, options, type_, journal=journal.upper())
         action_menu.start()
     else:
         click.echo(click.style("No bujo named '{}'".format(journal.upper()), fg='red'))
@@ -147,11 +147,14 @@ class Bujo(Picker):
         else:
             data = _yaml_r() or {}
             # Get correct key
+            bujo = self.journal
             if bujo in data.keys():
                 bujo_values = data[bujo]
                 bujo_values.append(new_note)
                 data[bujo] = bujo_values
                 _yaml_w(data)
+            self.options.append(new_note)
+            self.draw()
 
 
 
