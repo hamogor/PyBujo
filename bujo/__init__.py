@@ -25,6 +25,8 @@ yaml.add_representer(type(None), lambda s, _: s.represent_scalar(
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), '.bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
+# TODO - Handle empty values and no bujos gracefully
+
 
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
 @click.argument('journal', type=str, required=False)
@@ -193,6 +195,8 @@ class Bujo(Picker):
                 pass
         except IndexError:
             quit()
+
+        _yaml_w(data)
 
 
     def edit_bujo(self, instance):
