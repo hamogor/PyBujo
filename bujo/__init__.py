@@ -205,10 +205,27 @@ class Bujo(Picker):
         if edited_bujo is "":
             pass
         else:
-            data = _yaml_r() or {}
             data[edited_bujo] = data.pop(bujo)
             self.options[self.index] = edited_bujo
             self.draw()
+
+            _yaml_w(data)
+
+
+    def edit(self, instance):
+        note = self.options[self.index]
+
+        edit = EditBox("Edit note (ENTER to save), leave blank to cancel", "", instance)
+        edited_note = edit.take_input(edit.box)
+        if edited_note is "":
+            pass
+        else:
+            data = _yaml_r() or {}
+            bujo_values = data[self.journal]
+            note = bujo_values[self.index]
+            self.options[self.index] = edited_note
+            bujo_values[self.index] = edited_note
+            data[self.journal] = bujo_values
 
             _yaml_w(data)
 
@@ -276,14 +293,8 @@ class Bujo(Picker):
         pass
 
 
-    def edit(self, instance):
-        pass
-
-
     def back(self, instance):
         init_select_menu()
-
-
 
 
 def _yaml_r():
