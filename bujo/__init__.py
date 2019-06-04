@@ -186,7 +186,21 @@ class Bujo(Picker):
 
 
     def edit_bujo(self, instance):
-        pass
+        bujo = self.options[self.index]
+        data = _yaml_r() or {}
+        bujo_values = data[bujo]
+
+        edit = EditBox("Edit bujo name (ENTER to save), leave blank to cancel", "", instance)
+        edited_bujo = edit.take_input(edit.box).upper()
+        if edited_bujo is "":
+            pass
+        else:
+            data = _yaml_r() or {}
+            data[edited_bujo] = data.pop(bujo)
+            self.options[self.index] = edited_bujo
+            self.draw()
+
+            _yaml_w(data)
 
 
     def help_link(self, instance):
