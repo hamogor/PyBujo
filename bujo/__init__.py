@@ -171,7 +171,18 @@ class Bujo(Picker):
 
 
     def remove_bujo(self, instance):
-        pass
+        bujo = self.options[self.index]
+        data = _yaml_r() or {}
+        try:
+            data.pop(bujo, None)
+            self.options.pop(self.index)
+            if len(self.options) < 1:
+                self.options = ["MY FIRST BUJO"]
+                self.draw()
+            else:
+                pass
+        except IndexError:
+            quit()
 
 
     def edit_bujo(self, instance):
