@@ -198,6 +198,25 @@ class Bujo(Picker):
 
 
     def remove(self, instance):
+        bujo = self.journal
+        note = self.options[self.index]
+        data = _yaml_r() or {}
+        bujo_values = data[bujo]
+        try:
+            bujo_values.pop(self.index)
+            self.options.pop(self.index)
+            if len(self.options) < 1:
+                self.options.append("")
+                self.draw()
+            else:
+                pass
+        except IndexError:
+            quit()
+
+        self.index = 0
+        self.draw()
+
+        _yaml_w(data)
         pass
 
 
