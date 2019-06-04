@@ -122,7 +122,7 @@ class Bujo(Picker):
     def set_commands(self, menu_type):
        if self.type_ is "select":
            self.register_custom_handler(ord('q'), self.quit)
-           self.register_custom_handler(ord('a'), self.add)
+           self.register_custom_handler(ord('a'), self.add_bujo)
            self.register_custom_handler(ord('r'), self.remove_bujo)
            self.register_custom_handler(ord('e'), self.edit_bujo)
            self.register_custom_handler(ord('h'), self.help_link)
@@ -156,6 +156,18 @@ class Bujo(Picker):
             self.options.append(new_note)
             self.draw()
 
+
+    def add_bujo(self, instance):
+        edit = EditBox("Add a new Bujo (ENTER to save), leave blank to cancel", "", instance)
+        new_bujo = edit.take_input(edit.box).upper()
+        if new_bujo is "":
+            pass
+        else:
+            data = _yaml_r() or {}
+            data[new_bujo] = [""]
+            _yaml_w(data)
+        self.options.append(new_bujo)
+        self.draw()
 
 
     def remove_bujo(self, instance):
