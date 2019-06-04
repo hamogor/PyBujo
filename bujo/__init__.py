@@ -39,10 +39,10 @@ def cli(ctx, journal=None):
 def init_action_menu(journal=None):
     data = _yaml_r() or {}
     if journal.upper() in data.keys():
-        title = "Bujo [{}]\n\n(a)dd, (r)emove, (e)dit, (q)uit, (h)elp, (b)ack".format(journal.upper())
+        title = "Bujo [{}]\n\n\n(a)dd, (r)emove, (e)dit, (q)uit, (h)elp, (b)ack".format(journal.upper())
         options = data[journal.upper()]
         type_ = "bujo"
-        action_menu = Bujo(title, options, type_)
+        action_menu = Bujo(title, options, type_, journal.upper())
         action_menu.start()
     else:
         click.echo(click.style("No bujo named '{}'".format(journal.upper()), fg='red'))
@@ -51,7 +51,7 @@ def init_action_menu(journal=None):
 def init_select_menu():
     data = _yaml_r() or {}
 
-    title = "Select Bujo (ENTER): (a)dd, (e)dit, (r)emove, (q)uit, (h)elp"
+    title = "Select Bujo (ENTER): (a)dd, (e)dit, (r)emove, (q)uit, (h)elp\n\n\n"
     options = list(data.keys())
     type_ = "select"
 
@@ -74,7 +74,7 @@ class EditBox(object):
 
         stdscr = curses.initscr()
         stdscr.addstr(0,0,self.title)
-        editwin = curses.newwin(1,columns-2,21)
+        editwin = curses.newwin(1,columns-2,2,1)
         rectangle(stdscr, 1,0, 1+1+1, 1+columns-2)
         editwin.addstr(self.text)
         stdscr.refresh()
@@ -96,7 +96,7 @@ class Bujo(Picker):
 
     def __init__(self, title, options, type_, indicator='>',
                  default_index=0, multi_select=False, min_selection_count=0,
-                 options_map_func=None):
+                 options_map_func=None, journal=""):
 
         if len(options) < 1:
             self.options = ["MY FIRST BUJO"]
@@ -108,12 +108,13 @@ class Bujo(Picker):
         self.options = options
         self.type_ = type_
         self.custom_handlers = {}
-        self.indicator = indicator
+        self.indicator = '>'
         self.default_index = default_index
         self.multi_select = False
         self.min_selection_count=0
         self.options_map_func = None
         self.index = default_index
+        self.journal = journal
 
 
         self.set_commands(self.type_)
@@ -139,7 +140,19 @@ class Bujo(Picker):
 
 
     def add(self, instance):
-        pass
+        edit = EditBox("Add a new note (ENTER to save), leave blank to cancel", "", instance)
+        new_note = edit.take_input(edit.box)
+        if new_note is "":
+            pass
+        else:
+            data = _yaml_r() or {}
+            # Get correct key
+            if bujo in data.keys():
+                bujo_values = data[bujo]
+                bujo_values.append(new_note)
+                data[bujo] = bujo_values
+                _yaml_w(data)
+
 
 
     def remove_bujo(self, instance):
