@@ -39,7 +39,7 @@ def cli(ctx, journal=None):
 def init_action_menu(journal=None):
     data = _yaml_r() or {}
     if journal.upper() in data.keys():
-        title = "Bujo [{}]\n\n\n(a)dd, (r)emove, (e)dit, (q)uit, (h)elp, (b)ack".format(journal.upper())
+        title = "Bujo [{}]\n\n\n(a)dd, (r)emove, (e)dit, (m)ove, (q)uit, (h)elp, (b)ack".format(journal.upper())
         options = data[journal.upper()]
         type_ = "bujo"
         action_menu = Bujo(title, options, type_, journal=journal.upper())
@@ -58,6 +58,16 @@ def init_select_menu():
     select_menu = Bujo(title, options, type_)
     selected = select_menu.options[select_menu.index]
     init_action_menu(selected)
+
+def init_move_menu(note):
+    data = _yaml_r() or {}
+    title = "Which bujo do you want to move {} to?".format(note)
+    options = list(data.keys())
+    type_ = "select"
+
+    move_menu = Bujo(title, options, type_)
+    selected = move_menu.options[move_menu.index]
+    return selected
 
 class EditBox(object):
 
@@ -203,6 +213,33 @@ class Bujo(Picker):
             _yaml_w(data)
 
 
+    def move(self, instance):
+        note = self.options[self.index]
+
+        self.options.pop(self.index)
+        if len(self.options) < 1:
+            self.options.append("")
+            self.draw()
+
+        destination = init_move_menu(note)
+        data = _yaml_r() or {}
+
+
+        # Remove from here
+        from_values = data[self.journal]
+        from_values.pop(self.index)
+        data[self.journal] = from_values
+
+        # Add to destination
+        to_values = data[destination]
+        to_values.append(note)
+        data[destination] = to_values
+
+        _yaml_w(data)
+
+        init_action_menu(destination)
+
+
     def help_link(self, instance):
         if self.type_ is "select":
             self.title += "Documentation can be found at: "
@@ -247,8 +284,6 @@ class Bujo(Picker):
         init_select_menu()
 
 
-    def move(self, instance):
-        pass
 
 
 def _yaml_r():
