@@ -204,7 +204,12 @@ class Bujo(Picker):
 
 
     def help_link(self, instance):
-        pass
+        if self.type_ is "select":
+            self.title += "Documentation can be found at: "
+        elif self.type_ is "bujo":
+            self.title += "\n\nDocumentation can be found at: "
+
+        self.draw()
 
 
     def quit(self, instance):
