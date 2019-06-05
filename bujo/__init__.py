@@ -183,82 +183,85 @@ class Bujo(Picker):
 
 
     def remove_bujo(self, instance):
-        bujo = self.options[self.index]
-        data = _yaml_r() or {}
-        try:
-            data.pop(bujo, None)
+        if len(self.options) < 1:
+            pass
+        elif len(self.options) >= 1:
             self.options.pop(self.index)
-            if len(self.options) < 1:
-                self.options = ["MY FIRST BUJO"]
-                self.draw()
-            else:
-                pass
-        except IndexError:
-            quit()
-
-        _yaml_w(data)
+            self.draw()
+            data = _yaml_r() or {}
+            data.pop(self.journal, None)
+            _yaml_w(data)
 
 
     def edit_bujo(self, instance):
-        bujo = self.options[self.index]
-        data = _yaml_r() or {}
-        bujo_values = data[bujo]
-
-        edit = EditBox("Edit bujo name (ENTER to save), leave blank to cancel", "", instance)
-        edited_bujo = edit.take_input(edit.box).upper()
-        if edited_bujo is "":
+        if len(self.options) < 1:
             pass
-        else:
-            data[edited_bujo] = data.pop(bujo)
-            self.options[self.index] = edited_bujo
-            self.draw()
+        elif len(self.options) >= 1:
+            bujo = self.options[self.index]
+            data = _yaml_r() or {}
+            bujo_values = data[bujo]
 
-            _yaml_w(data)
+            edit = EditBox("Edit bujo name (ENTER to save), leave blank to cancel", "", instance)
+            edited_bujo = edit.take_input(edit.box).upper()
+            if edited_bujo is "":
+                pass
+            else:
+                data[edited_bujo] = data.pop(bujo)
+                self.options[self.index] = edited_bujo
+                self.draw()
+
+                _yaml_w(data)
 
 
     def edit(self, instance):
-        note = self.options[self.index]
-
-        edit = EditBox("Edit note (ENTER to save), leave blank to cancel", "", instance)
-        edited_note = edit.take_input(edit.box)
-        if edited_note is "":
+        if len(self.options) < 1:
             pass
-        else:
-            data = _yaml_r() or {}
-            bujo_values = data[self.journal]
-            note = bujo_values[self.index]
-            self.options[self.index] = edited_note
-            bujo_values[self.index] = edited_note
-            data[self.journal] = bujo_values
+        elif len(self.options) >= 1:
+            note = self.options[self.index]
 
-            _yaml_w(data)
+            edit = EditBox("Edit note (ENTER to save), leave blank to cancel", "", instance)
+            edited_note = edit.take_input(edit.box)
+            if edited_note is "":
+                pass
+            else:
+                data = _yaml_r() or {}
+                bujo_values = data[self.journal]
+                note = bujo_values[self.index]
+                self.options[self.index] = edited_note
+                bujo_values[self.index] = edited_note
+                data[self.journal] = bujo_values
+
+                _yaml_w(data)
 
 
     def move(self, instance):
-        note = self.options[self.index]
-
-        self.options.pop(self.index)
         if len(self.options) < 1:
-            self.options.append("")
-            self.draw()
+            pass
+        elif len(self.options) >= 1:
+            note = self.options[self.index]
 
-        destination = init_move_menu(note)
-        data = _yaml_r() or {}
+            self.options.pop(self.index)
+            if len(self.options) < 1:
+                self.options.append("")
+                self.draw()
+
+            destination = init_move_menu(note)
+            data = _yaml_r() or {}
 
 
-        # Remove from here
-        from_values = data[self.journal]
-        from_values.pop(self.index)
-        data[self.journal] = from_values
+            # Remove from here
+            from_values = data[self.journal]
+            from_values.pop(self.index)
+            data[self.journal] = from_values
 
-        # Add to destination
-        to_values = data[destination]
-        to_values.append(note)
-        data[destination] = to_values
+            # Add to destination
+            to_values = data[destination]
+            to_values.append(note)
+            data[destination] = to_values
 
-        _yaml_w(data)
+            _yaml_w(data)
 
-        init_action_menu(destination)
+            init_action_menu(destination)
 
 
     def help_link(self, instance):
@@ -275,26 +278,16 @@ class Bujo(Picker):
 
 
     def remove(self, instance):
-        bujo = self.journal
-        note = self.options[self.index]
-        data = _yaml_r() or {}
-        bujo_values = data[bujo]
-        try:
-            bujo_values.pop(self.index)
+        if len(self.options) < 1:
+            pass
+        elif len(self.options) >= 1:
             self.options.pop(self.index)
-            if len(self.options) < 1:
-                self.options.append("")
-                self.draw()
-            else:
-                pass
-        except IndexError:
-            quit()
-
-        self.index = 0
-        self.draw()
-
-        _yaml_w(data)
-        pass
+            self.draw()
+            data = _yaml_r() or {}
+            bujo_values = data[self.journal]
+            bujo_values.pop(self.index)
+            data[self.journal] = bujo_values
+            _yaml_w(data)
 
 
     def back(self, instance):
