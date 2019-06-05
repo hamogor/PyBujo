@@ -3,4 +3,5 @@ venv/
 bujo.egg-info/
 .idea/
 dist/
+bujo/__init__.pyc
 .gitignore

@@ -3,23 +3,19 @@ import bujo
 
 setup(
     name='bujo',
-    version='0.2.2',
+    version='1.0',
     description='A CLI tool for tracking anything and everything',
-    long_description_content_type = "text/markdown",
-    long_description=open('README.md').read(),
     author=bujo.__author__,
     author_email='ferovax@gmail.com',
-    py_modules=['bujo'],
     install_requires=[
         'Click',
-        'PyFiglet',
         'pyyaml',
-        'colorama',
+        'pick',
     ],
-    entry_points='''
-        [console_scripts]
-        bujo=bujo:cli
-    ''',
+    packages=['bujo'],
+    entry_points={
+        'console_scripts': ['bujo = bujo:cli'],
+    },
     classifiers=(
         'Intended Audience :: Developers',
         'Natural Language :: English',

@@ -1,8 +1,4 @@
 Click
-nested_lookup
-pprint
 pyyaml
-colorama
-asciimatics
 pick
 
