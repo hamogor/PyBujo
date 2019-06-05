@@ -186,10 +186,15 @@ class Bujo(Picker):
         if len(self.options) < 1:
             pass
         elif len(self.options) >= 1:
+            bujo = self.options[self.index]
             self.options.pop(self.index)
+            self.move_up()
             self.draw()
             data = _yaml_r() or {}
-            data.pop(self.journal, None)
+            try:
+                data.pop(bujo, None)
+            except IndexError:
+                self.index -= 1
             _yaml_w(data)
 
 
@@ -282,6 +287,7 @@ class Bujo(Picker):
             pass
         elif len(self.options) >= 1:
             self.options.pop(self.index)
+            self.move_up()
             self.draw()
             data = _yaml_r() or {}
             bujo_values = data[self.journal]
