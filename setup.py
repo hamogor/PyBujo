@@ -1,10 +1,18 @@
 from setuptools import setup, find_packages
+from os import path
 import bujo
+
+root_dir = path.abspath(path.dirname(__file__))
+with open(path.join(root_dir, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name='bujo',
-    version='1.0',
+    version='1.0.2',
     description='A CLI tool for tracking anything and everything',
+    keywords="cli note diary journal note-taking bullet_journal",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author=bujo.__author__,
     author_email='ferovax@gmail.com',
     install_requires=[
