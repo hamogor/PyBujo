@@ -144,7 +144,6 @@ class Bujo(Picker):
            self.register_custom_handler(ord('a'), self.add)
            self.register_custom_handler(ord('r'), self.remove)
            self.register_custom_handler(ord('e'), self.edit)
-           self.register_custom_handler(ord('q'), self.quit)
            self.register_custom_handler(ord('h'), self.help_link)
            self.register_custom_handler(ord('b'), self.back)
            self.register_custom_handler(ord('m'), self.move)
