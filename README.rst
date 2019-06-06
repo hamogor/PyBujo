@@ -1,8 +1,9 @@
 # PyBujo
- 
-A cli for tracking ..things
 
 PyBujo uses pick and curses to provide a barebones interactive way of creating, managing and visualizing notes
+ 
+PyBujo is a simple and effective means of notetaking from the command line. I really disliked how much bulk and crazy functionality most notetaking cli's were packaged with so I built a very simple and extensible one for you.
+
   
 +---------------------+---------------------------------+
 | Command Line        |                                 |
