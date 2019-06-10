@@ -4,7 +4,7 @@ PyBujo uses pick and curses to provide a barebones interactive way of creating, 
  
 PyBujo is a simple and effective means of notetaking from the command line. I really disliked how much bulk and crazy functionality most notetaking cli's were packaged with so I built a very simple and extensible one for you.
 
-`pip install bujo`
+```pip install bujo```
 
   
 +---------------------+---------------------------------+
