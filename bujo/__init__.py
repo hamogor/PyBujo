@@ -294,7 +294,7 @@ def _yaml_r():
     try:
         with open(_BUJO_PATH, 'r') as bujo_file:
             return yaml.safe_load(bujo_file)
-    except FileNotFoundError:
+    except IOError:
         with open(_BUJO_PATH, 'w+'):
             _yaml_r()
 
