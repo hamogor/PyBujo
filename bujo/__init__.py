@@ -13,12 +13,10 @@ __copyright__ = "Copyright (c) 2019 Harry Morgan <ferovax@gmail.com>"
 __all__ = ['Bujo', 'cli']
 
 import click
-import re
 import os
 import yaml
 from curses.textpad import Textbox, rectangle
 import curses
-from pprint import pprint as pp
 from pick import Picker
 
 
@@ -73,6 +71,7 @@ def init_move_menu(note):
     selected = move_menu.options[move_menu.index]
     return selected
 
+
 class EditBox(object):
 
     def __init__(self, title, text, box):
@@ -94,7 +93,6 @@ class EditBox(object):
         stdscr.refresh()
         self.box = Textbox(editwin)
         return
-
 
     def take_input(self, box):
         box.stripspaces = True
@@ -130,27 +128,25 @@ class Bujo(Picker):
         self.index = default_index
         self.journal = journal
 
-
         self.set_commands(self.type_)
 
     def set_commands(self, menu_type):
-       if self.type_ is "select":
-           self.register_custom_handler(ord('q'), self.quit)
-           self.register_custom_handler(ord('a'), self.add_bujo)
-           self.register_custom_handler(ord('r'), self.remove_bujo)
-           self.register_custom_handler(ord('e'), self.edit_bujo)
-           self.register_custom_handler(ord('h'), self.help_link)
-           return self.start()
-       elif self.type_ is "bujo":
-           self.register_custom_handler(ord('q'), self.quit)
-           self.register_custom_handler(ord('a'), self.add)
-           self.register_custom_handler(ord('r'), self.remove)
-           self.register_custom_handler(ord('e'), self.edit)
-           self.register_custom_handler(ord('h'), self.help_link)
-           self.register_custom_handler(ord('b'), self.back)
-           self.register_custom_handler(ord('m'), self.move)
-           return self.start()
-
+        if self.type_ is "select":
+            self.register_custom_handler(ord('q'), self.quit)
+            self.register_custom_handler(ord('a'), self.add_bujo)
+            self.register_custom_handler(ord('r'), self.remove_bujo)
+            self.register_custom_handler(ord('e'), self.edit_bujo)
+            self.register_custom_handler(ord('h'), self.help_link)
+            return self.start()
+        elif self.type_ is "bujo":
+            self.register_custom_handler(ord('q'), self.quit)
+            self.register_custom_handler(ord('a'), self.add)
+            self.register_custom_handler(ord('r'), self.remove)
+            self.register_custom_handler(ord('e'), self.edit)
+            self.register_custom_handler(ord('h'), self.help_link)
+            self.register_custom_handler(ord('b'), self.back)
+            self.register_custom_handler(ord('m'), self.move)
+            return self.start()
 
     def add(self, instance):
         edit = EditBox("Add a new note (ENTER to save), leave blank to cancel", "", instance)
@@ -169,7 +165,6 @@ class Bujo(Picker):
             self.options.append(new_note)
             self.draw()
 
-
     def add_bujo(self, instance):
         edit = EditBox("Add a new Bujo (ENTER to save), leave blank to cancel", "", instance)
         new_bujo = edit.take_input(edit.box).upper()
@@ -181,7 +176,6 @@ class Bujo(Picker):
             _yaml_w(data)
         self.options.append(new_bujo)
         self.draw()
-
 
     def remove_bujo(self, instance):
         if len(self.options) < 1:
@@ -197,7 +191,6 @@ class Bujo(Picker):
             except IndexError:
                 self.index -= 1
             _yaml_w(data)
-
 
     def edit_bujo(self, instance):
         if len(self.options) < 1:
@@ -217,7 +210,6 @@ class Bujo(Picker):
                 self.draw()
 
                 _yaml_w(data)
-
 
     def edit(self, instance):
         if len(self.options) < 1:
@@ -239,7 +231,6 @@ class Bujo(Picker):
 
                 _yaml_w(data)
 
-
     def move(self, instance):
         if len(self.options) < 1:
             pass
@@ -253,7 +244,6 @@ class Bujo(Picker):
 
             destination = init_move_menu(note)
             data = _yaml_r() or {}
-
 
             # Remove from here
             from_values = data[self.journal]
@@ -269,8 +259,9 @@ class Bujo(Picker):
 
             init_action_menu(destination)
 
-
     def help_link(self, instance):
+        if "Documentation" in self.title:
+            pass
         if self.type_ is "select":
             self.title += "Documentation can be found at: https://github.com/oref/PyBujo"
         elif self.type_ is "bujo":
@@ -278,10 +269,8 @@ class Bujo(Picker):
 
         self.draw()
 
-
     def quit(self, instance):
         return exit()
-
 
     def remove(self, instance):
         if len(self.options) < 1:
@@ -295,7 +284,6 @@ class Bujo(Picker):
             bujo_values.pop(self.index)
             data[self.journal] = bujo_values
             _yaml_w(data)
-
 
     def back(self, instance):
         init_select_menu()
@@ -313,6 +301,7 @@ def _yaml_r():
 def _yaml_w(data):
     with open(_BUJO_PATH, 'w') as bujo_file:
         yaml.dump(data, bujo_file, indent=4, default_flow_style=False)
+
 
 if __name__ == '__main__':
     cli = click.CommandCollection(sources=[cli])
