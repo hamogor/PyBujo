@@ -5,6 +5,8 @@
 # Copyright (c) 2019 Harry Morgan <ferovax@gmail.com>
 # A CLI tool for tracking things simply
 
+# TODO - Fix full blank terminal appended to screen
+
 __version__ = "0.2"
 __author__ = "Harry Morgan <ferovax@gmail.com>"
 __copyright__ = "Copyright (c) 2019 Harry Morgan <ferovax@gmail.com>"
