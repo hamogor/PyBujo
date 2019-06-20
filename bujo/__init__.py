@@ -8,12 +8,11 @@
 # TODO - Fix full blank terminal appended to screen
 # TODO - Fix rm on index 0 going to bottom of list
 
-__version__ = "0.2"
-__author__ = "Harry Morgan <ferovax@gmail.com>"
+__version__ = "1.0.6"
 __copyright__ = "Copyright (c) 2019 Harry Morgan <ferovax@gmail.com>"
 __all__ = ['Bujo', 'cli']
 
-import click
+import Click
 import os
 import yaml
 from curses.textpad import Textbox, rectangle
@@ -26,7 +25,6 @@ yaml.add_representer(type(None), lambda s, _: s.represent_scalar(
 _BUJO_PATH = os.path.join(os.path.expanduser('~'), '.bujo.yaml')
 _CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
-# TODO - Handle empty values and no bujos gracefully
 
 
 @click.group(invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
@@ -153,7 +151,8 @@ class Bujo(Picker):
         edit = EditBox("Add a new note (ENTER to save), leave blank to cancel", "", instance)
         new_note = edit.take_input(edit.box)
         if new_note is "":
-            pass
+            del edit
+            return
         else:
             data = _yaml_r() or {}
             # Get correct key
@@ -170,7 +169,8 @@ class Bujo(Picker):
         edit = EditBox("Add a new Bujo (ENTER to save), leave blank to cancel", "", instance)
         new_bujo = edit.take_input(edit.box).upper()
         if new_bujo is "":
-            pass
+            del edit
+            return
         else:
             data = _yaml_r() or {}
             data[new_bujo] = [""]
@@ -180,7 +180,7 @@ class Bujo(Picker):
 
     def remove_bujo(self, instance):
         if len(self.options) < 1:
-            pass
+            return
         elif len(self.options) >= 1:
             bujo = self.options[self.index]
             self.options.pop(self.index)
@@ -195,7 +195,7 @@ class Bujo(Picker):
 
     def edit_bujo(self, instance):
         if len(self.options) < 1:
-            pass
+            return
         elif len(self.options) >= 1:
             bujo = self.options[self.index]
             data = _yaml_r() or {}
@@ -275,10 +275,11 @@ class Bujo(Picker):
 
     def remove(self, instance):
         if len(self.options) < 1:
-            pass
+            return
         elif len(self.options) >= 1:
             self.options.pop(self.index)
-            self.move_up()
+            if self.index > 0:
+                self.index -= 1
             self.draw()
             data = _yaml_r() or {}
             bujo_values = data[self.journal]
@@ -287,7 +288,7 @@ class Bujo(Picker):
             _yaml_w(data)
 
     def back(self, instance):
-        init_select_menu()
+        return
 
 
 def _yaml_r():
