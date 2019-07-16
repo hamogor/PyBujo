@@ -2,17 +2,15 @@
 # -*- coding: utf-8 -*-
 
 # bujo
-# Copyright (c) 2019 Harry Morgan <ferovax@gmail.com>
+# Copyright (c) 2019 Oref <orefdev@gmail.com>
 # A CLI tool for tracking things simply
 
-# TODO - Fix full blank terminal appended to screen
-# TODO - Fix rm on index 0 going to bottom of list
 
-__version__ = "1.0.6"
-__copyright__ = "Copyright (c) 2019 Harry Morgan <ferovax@gmail.com>"
+__version__ = "1.0.7"
+__copyright__ = "Copyright (c) 2019 Harry Morgan <orefdev@gmail.com>"
 __all__ = ['Bujo', 'cli']
 
-import Click
+import click
 import os
 import yaml
 from curses.textpad import Textbox, rectangle
@@ -109,12 +107,6 @@ class Bujo(Picker):
                  default_index=0, multi_select=False, min_selection_count=0,
                  options_map_func=None, journal=""):
 
-        if len(options) < 1:
-            self.options = ["MY FIRST BUJO"]
-            data = _yaml_r() or {}
-            data["MY FIRST BUJO"] = [""]
-            _yaml_w(data)
-
         self.title = title
         self.options = options
         self.type_ = type_
@@ -159,9 +151,16 @@ class Bujo(Picker):
             bujo = self.journal
             if bujo in data.keys():
                 bujo_values = data[bujo]
-                bujo_values.append(new_note)
+                if bujo_values[0] is "":
+                    bujo_values[0] = new_note
+                    del self.options[0]
+                else:
+                    bujo_values.append(new_note)
                 data[bujo] = bujo_values
                 _yaml_w(data)
+            for option in self.options:
+                if not option:
+                    print(data[bujo])
             self.options.append(new_note)
             self.draw()
 
@@ -176,6 +175,8 @@ class Bujo(Picker):
             data[new_bujo] = [""]
             _yaml_w(data)
         self.options.append(new_bujo)
+        if self.index == -1:  # New bujo is added when none exist
+            self.index = 0
         self.draw()
 
     def remove_bujo(self, instance):
@@ -183,8 +184,11 @@ class Bujo(Picker):
             return
         elif len(self.options) >= 1:
             bujo = self.options[self.index]
+            x = self.index
             self.options.pop(self.index)
-            self.move_up()
+            y = self.index
+            if self.index <= len(self.options):
+                self.move_up()
             self.draw()
             data = _yaml_r() or {}
             try:
@@ -288,7 +292,7 @@ class Bujo(Picker):
             _yaml_w(data)
 
     def back(self, instance):
-        return
+        init_select_menu()
 
 
 def _yaml_r():
