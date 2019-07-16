@@ -1,4 +1,5 @@
-#PyBujo
+PyBujo
+======
 
 PyBujo uses pick and curses to provide a barebones interactive way of creating, managing and indexing notes
 
