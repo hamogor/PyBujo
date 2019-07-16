@@ -2,12 +2,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='bujo',
-    version='1.0.7',
+    version='1.0.8',
     description='A CLI tool for tracking anything and everything',
     keywords="cli note diary journal note-taking bullet_journal",
     long_description=open('README.rst').read(),
     long_description_content_type="text/markdown",
-    author="Oref"
+    author="Oref",
     author_email='orefdev@gmail.com',
     url='https://github.com/oref/PyBujo.git',
     install_requires=[

@@ -6,7 +6,7 @@
 # A CLI tool for tracking things simply
 
 
-__version__ = "1.0.7"
+__version__ = "1.0.8"
 __copyright__ = "Copyright (c) 2019 Harry Morgan <orefdev@gmail.com>"
 __all__ = ['Bujo', 'cli']
 

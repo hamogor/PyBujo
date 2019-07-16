@@ -5,3 +5,5 @@ bujo.egg-info/
 dist/
 bujo/__init__.pyc
 .gitignore
+p/
+.gitignore
