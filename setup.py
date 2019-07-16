@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='bujo',
-    version='1.0.8',
+    version='1.0.9',
     description='A CLI tool for tracking anything and everything',
     keywords="cli note diary journal note-taking bullet_journal",
     long_description=open('README.rst').read(),

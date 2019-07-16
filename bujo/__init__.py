@@ -6,7 +6,7 @@
 # A CLI tool for tracking things simply
 
 
-__version__ = "1.0.8"
+__version__ = "1.0.9"
 __copyright__ = "Copyright (c) 2019 Harry Morgan <orefdev@gmail.com>"
 __all__ = ['Bujo', 'cli']
 
@@ -151,11 +151,7 @@ class Bujo(Picker):
             bujo = self.journal
             if bujo in data.keys():
                 bujo_values = data[bujo]
-                if bujo_values[0] is "":
-                    bujo_values[0] = new_note
-                    del self.options[0]
-                else:
-                    bujo_values.append(new_note)
+                bujo_values.append(new_note)
                 data[bujo] = bujo_values
                 _yaml_w(data)
             for option in self.options:
